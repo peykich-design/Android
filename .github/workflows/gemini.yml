@@ -16,6 +16,8 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+    env:
+      GEMINI_CLI_TRUST_WORKSPACE: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,9 +28,12 @@ jobs:
           GEMINI_CLI_TRUST_WORKSPACE: "true"
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          settings: |
+            {
+              "trustedFolders": ["/"],
+              "skipTrust": true
+            }
           prompt: |
             You are a helpful Android developer assistant.
             Read the issue or comment from the user, understand what they want,
-            and make the necessary code changes in this repository.
-            After making changes, commit them to a new branch and open a pull request.
-            The user may write in Japanese or English. Respond in the same language.
+            and ma
