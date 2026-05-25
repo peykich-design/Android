@@ -1,0 +1,32 @@
+name: Gemini Assistant
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened]
+
+jobs:
+  gemini:
+    if: |
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@gemini-cli')) ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@gemini-cli'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Gemini CLI
+        uses: google-github-actions/run-gemini-cli@v0.1.21
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          prompt: |
+            You are a helpful Android developer assistant.
+            Read the issue or comment from the user, understand what they want,
+            and make the necessary code changes in this repository.
+            After making changes, commit them to a new branch and open a pull request.
+            The user may write in Japanese or English. Respond in the same language.
