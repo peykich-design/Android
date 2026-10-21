@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Amazon AI Reader</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Amazonの商品ページ・検索結果ページを、AIが読みやすいMarkdown/JSONに変換します。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: two-pane workbench (input HTML → structured output), stacks to one column on phones */
+:root {
+  --bg: #f5f6f4;
+  --surface: #ffffff;
+  --fg: #1d2421;
+  --muted: #5e6a64;
+  --line: #d9dfdb;
+  --accent: #1f6f5c;
+  --accent-ink: #ffffff;
+  --accent-soft: #e2efe9;
+  --code-bg: #f0f3f1;
+  --warn: #9a5b00;
+  --font-ui: "IBM Plex Sans JP", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141917; --surface: #1b2220; --fg: #e4ebe7; --muted: #95a39c; --line: #2d3733;
+    --accent: #5cc3a6; --accent-ink: #0d1412; --accent-soft: #1f322c; --code-bg: #111614; --warn: #e0a64a;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141917; --surface: #1b2220; --fg: #e4ebe7; --muted: #95a39c; --line: #2d3733;
+  --accent: #5cc3a6; --accent-ink: #0d1412; --accent-soft: #1f322c; --code-bg: #111614; --warn: #e0a64a;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-ui); font-size: 15px; line-height: 1.6;
+  margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 24px 48px;
+}
+.wrap { max-width: 1200px; margin: 0 auto; display: grid; gap: 20px; }
+header h1 { font-size: 1.6rem; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+header p { margin: 4px 0 0; color: var(--muted); max-width: 65ch; }
+.steps { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; font-size: .85rem; color: var(--muted); }
+.steps span { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+.pane { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 12px; min-width: 0; align-content: start; }
+.pane h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0; font-weight: 500; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+textarea, input[type="url"] {
+  width: 100%; font-family: var(--font-mono); font-size: 12.5px; color: var(--fg);
+  background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px;
+}
+textarea { min-height: 260px; resize: vertical; }
+button, .btn {
+  font: inherit; font-size: .9rem; border-radius: 6px; padding: 7px 14px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--fg);
+}
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 500; }
+button:focus-visible, textarea:focus-visible, input:focus-visible, .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.tab { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; color: var(--muted); padding: 6px 10px; }
+.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); font-weight: 500; }
+pre.out {
+  margin: 0; background: var(--code-bg); border: 1px solid var(--line); border-radius: 6px; padding: 12px;
+  font-family: var(--font-mono); font-size: 12.5px; white-space: pre-wrap; word-break: break-word;
+  max-height: 560px; overflow: auto;
+}
+.stats { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .85rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.stats b { color: var(--fg); font-weight: 500; }
+.chip { display: inline-block; font-size: .78rem; padding: 1px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 500; }
+.note { font-size: .85rem; color: var(--muted); }
+.warn { color: var(--warn); }
+.toast { font-size: .85rem; color: var(--accent); min-height: 1.2em; }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; }
+details summary { cursor: pointer; font-weight: 500; }
+details ol { padding-left: 1.3em; margin: 8px 0; }
+details li { margin: 4px 0; }
+code { font-family: var(--font-mono); font-size: .9em; background: var(--code-bg); padding: 1px 4px; border-radius: 4px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Amazon AI Reader</h1>
+    <p>Amazonの商品ページや検索結果のHTMLから、広告・スクリプト・レイアウトを取り除き、ChatGPTやClaudeにそのまま渡せるMarkdown/JSONに変換します。処理はすべてこのブラウザ内で行い、データはどこにも送信しません。</p>
+    <div class="steps"><span>商品ページ</span><span>検索結果ページ</span><span>その他のページ（本文抽出）</span></div>
+  </header>
+
+  <div class="grid">
+    <section class="pane" aria-labelledby="in-h">
+      <h2 id="in-h">入力：ページのHTML</h2>
+      <textarea id="html-in" spellcheck="false" placeholder="AmazonページのHTMLをここに貼り付け（PCなら Ctrl+U → 全選択 → コピー）"></textarea>
+      <input id="url-in" type="url" placeholder="元のURL（任意。ASIN補完やリンクに使用）">
+      <div class="row">
+        <button class="primary" id="convert">変換する</button>
+        <label class="btn" for="file-in">HTMLファイルを開く</label>
+        <input id="file-in" type="file" accept=".html,.htm,text/html" hidden>
+        <button id="sample">サンプルを読み込む</button>
+        <button id="clear">クリア</button>
+      </div>
+      <p class="note">「Webページ、HTMLのみ」で保存した .html ファイルもそのまま読み込めます。</p>
+    </section>
+
+    <section class="pane" aria-labelledby="out-h">
+      <h2 id="out-h">出力：AI向けテキスト</h2>
+      <div class="stats" id="stats"></div>
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-md" aria-selected="true" data-fmt="md">Markdown</button>
+        <button class="tab" role="tab" id="tab-json" aria-selected="false" data-fmt="json">JSON</button>
+        <button class="tab" role="tab" id="tab-prompt" aria-selected="false" data-fmt="prompt">プロンプト付き</button>
+      </div>
+      <pre class="out" id="out" tabindex="0"></pre>
+      <div class="row">
+        <button class="primary" id="copy">コピー</button>
+        <span class="toast" id="toast" role="status"></span>
+      </div>
+    </section>
+  </div>
+
+  <details id="bm">
+    <summary>ブックマークレットで、Amazonのページ上で直接変換する</summary>
+    <p class="note">HTMLのコピーが面倒なとき用です。Amazonの商品ページを開いた状態でブックマークを実行すると、変換結果がページ上に表示されてコピーできます。</p>
+    <ol>
+      <li>下の「ブックマークレットをコピー」を押す</li>
+      <li>適当なページをブックマークし、そのブックマークの「URL」欄をコピーした内容に置き換える（名前は「AI用に変換」など）</li>
+      <li>Amazonの商品ページ・検索結果を開いた状態で、そのブックマークを開く</li>
+    </ol>
+    <div class="row">
+      <button id="copy-bm">ブックマークレットをコピー</button>
+      <span class="toast" id="bm-toast" role="status"></span>
+    </div>
+    <textarea id="bm-code" readonly hidden style="min-height:80px"></textarea>
+  </details>
+</div>
+
+<!-- 変換ロジック。ブックマークレットにも同じコードを埋め込むため、DOM以外に依存しない形で書く -->
+<script id="extractor">
+function amazonExtract(doc, pageUrl) {
+  var clean = function (s) { return (s || "").replace(/[‎‏ ]/g, " ").replace(/\s+/g, " ").trim(); };
+  var $ = function (sel, root) { return (root || doc).querySelector(sel); };
+  var $$ = function (sel, root) { return Array.prototype.slice.call((root || doc).querySelectorAll(sel)); };
+  var txt = function (sel, root) { var el = $(sel, root); return el ? clean(el.textContent) : ""; };
+  var first = function (sels, root) { for (var i = 0; i < sels.length; i++) { var t = txt(sels[i], root); if (t) return t; } return ""; };
+  // 「5つ星のうち4.2」「4.2 out of 5 stars」どちらの表記からも評価値を取り出す
+  var star = function (s) { var m = (s || "").match(/5つ星のうち\s*([\d.]+)/) || (s || "").match(/([\d.]+)\s*out of/) || (s || "").match(/[\d.]+/); return m ? (m[1] || m[0]) : ""; };
+  var abs = function (href) { try { return new URL(href, pageUrl || "https://www.amazon.co.jp/").href; } catch (e) { return href || ""; } };
+
+  var canonical = ($('link[rel="canonical"]') || {}).href || "";
+  var url = pageUrl || canonical || "";
+  var asinMatch = (url + " " + canonical).match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/);
+  var asinInput = $('input#ASIN, input[name="ASIN"]');
+
+  // 検索結果ページ
+  var results = $$('div[data-component-type="s-search-result"]');
+  if (results.length) {
+    var items = results.map(function (r, i) {
+      var link = $("h2 a, a.a-link-normal.s-no-outline, a.a-link-normal", r);
+      var href = link ? link.getAttribute("href") : "";
+      var asin = r.getAttribute("data-asin") || "";
+      return {
+        rank: i + 1,
+        asin: asin,
+        title: first(["h2 span", "h2"], r),
+        price: first([".a-price:not(.a-text-price) .a-offscreen", ".a-price .a-offscreen"], r),
+        listPrice: txt(".a-price.a-text-price .a-offscreen", r),
+        rating: star(txt("i.a-icon-star-small .a-icon-alt, i.a-icon-star-mini .a-icon-alt, .a-icon-alt", r)),
+        reviewCount: first(['[aria-label$="件の評価"]', 'span.s-underline-text', 'a[href*="customerReviews"] span'], r).replace(/[()]/g, ""),
+        sponsored: /スポンサー|Sponsored/.test(r.textContent),
+        prime: !!$("i.a-icon-prime, [aria-label='Amazon Prime']", r),
+        url: asin ? abs("/dp/" + asin) : abs(href)
+      };
+    }).filter(function (x) { return x.title; });
+    return {
+      pageType: "search",
+      query: (($('input#twotabsearchtextbox') || {}).value || "").trim(),
+      url: url,
+      resultCount: items.length,
+      results: items
+    };
+  }
+
+  // 商品ページ
+  var title = first(["#productTitle", "#title", "#ebooksProductTitle"]);
+  if (title) {
+    var specs = {};
+    var addSpec = function (k, v) { k = clean(k).replace(/\s*[:：]\s*$/, ""); v = clean(v); if (k && v && !specs[k] && k.length < 60) specs[k] = v; };
+    $$("#productDetails_techSpec_section_1 tr, #productDetails_detailBullets_sections1 tr, #productOverview_feature_div tr, #poExpander tr, table.prodDetTable tr, #technicalSpecifications_section_1 tr").forEach(function (tr) {
+      addSpec(txt("th, td:first-child", tr), txt("td:last-child", tr));
+    });
+    $$("#detailBullets_feature_div li, #detailBulletsWrapper_feature_div li").forEach(function (li) {
+      var spans = $$("span.a-text-bold", li);
+      if (spans.length) { var k = clean(spans[0].textContent); addSpec(k, clean(li.textContent).replace(k, "")); }
+    });
+    delete specs["カスタマーレビュー"]; delete specs["Customer Reviews"]; delete specs["Amazon 売れ筋ランキング"]; delete specs["Best Sellers Rank"];
+
+    var rankText = "";
+    $$("#detailBullets_feature_div li, #productDetails_detailBullets_sections1 tr, #SalesRank").forEach(function (el) {
+      if (/売れ筋ランキング|Best Sellers Rank/.test(el.textContent) && !rankText) rankText = clean(el.textContent).replace(/^.*?(売れ筋ランキング|Best Sellers Rank)\s*[:：]?\s*/, "").replace(/\(.*?(トップ|See Top).*?\)/g, "");
+    });
+
+    var images = [];
+    var land = $("#landingImage, #imgBlkFront, #ebooksImgBlkFront");
+    if (land) {
+      var hi = land.getAttribute("data-old-hires");
+      if (hi) images.push(hi);
+      try { Object.keys(JSON.parse(land.getAttribute("data-a-dynamic-image") || "{}")).forEach(function (u) { if (images.length < 1) images.push(u); }); } catch (e) {}
+      if (!images.length && land.getAttribute("src")) images.push(land.getAttribute("src"));
+    }
+
+    var ratingRaw = first(["#acrPopover .a-icon-alt", '[data-hook="rating-out-of-text"]', "#averageCustomerReviews .a-icon-alt"]);
+    var ratingTitle = ($("#acrPopover") || { getAttribute: function () { return ""; } }).getAttribute("title") || "";
+
+    var reviews = $$('[data-hook="review"]').slice(0, 20).map(function (rv) {
+      var rt = $('[data-hook="review-title"]', rv);
+      var titleSpans = rt ? $$("span", rt).map(function (s) { return clean(s.textContent); }).filter(function (s) { return s && !/5つ星のうち|out of 5/.test(s); }) : [];
+      return {
+        author: txt(".a-profile-name", rv),
+        rating: star(first(['[data-hook="review-star-rating"] .a-icon-alt', '[data-hook="cmps-review-star-rating"] .a-icon-alt', ".a-icon-alt"], rv)),
+        title: titleSpans.length ? titleSpans[titleSpans.length - 1] : (rt ? clean(rt.textContent) : ""),
+        date: txt('[data-hook="review-date"]', rv),
+        verified: !!$('[data-hook="avp-badge"]', rv),
+        body: txt('[data-hook="review-body"]', rv)
+      };
+    });
+    var rating = star(ratingRaw || ratingTitle);
+
+    var asin = (asinInput && asinInput.value) || (asinMatch && asinMatch[1]) || specs["ASIN"] || "";
+    return {
+      pageType: "product",
+      url: asin ? abs("/dp/" + asin) : url,
+      asin: asin,
+      title: title,
+      brand: first(["#bylineInfo", "#brand"]).replace(/^(ブランド|Brand)\s*[:：]\s*|^Visit the |のストアを表示$|\s*Store$/g, ""),
+      categories: $$("#wayfinding-breadcrumbs_feature_div li a").map(function (a) { return clean(a.textContent); }).filter(Boolean),
+      price: first(["#corePrice_feature_div .a-price .a-offscreen", "#corePriceDisplay_desktop_feature_div .a-price:not(.a-text-price) .a-offscreen", "#apex_desktop .a-price .a-offscreen", "#priceblock_ourprice", "#priceblock_dealprice", "#kindle-price", ".a-price .a-offscreen"]),
+      listPrice: first(["#corePriceDisplay_desktop_feature_div .a-price.a-text-price .a-offscreen", ".basisPrice .a-offscreen"]),
+      availability: txt("#availability"),
+      seller: first(["#merchantInfoFeature_feature_div .offer-display-feature-text-message", "#sellerProfileTriggerId", "#merchant-info"]),
+      rating: rating,
+      reviewCount: txt("#acrCustomerReviewText").replace(/[()]/g, ""),
+      salesRank: rankText,
+      features: $$("#feature-bullets li, #featurebullets_feature_div li").map(function (li) { return clean(li.textContent); }).filter(function (s) { return s && !/^(この商品について|›)/.test(s); }),
+      description: first(["#productDescription", "#bookDescription_feature_div .a-expander-content", "#bookDescription_feature_div"]),
+      specs: specs,
+      images: images,
+      reviews: reviews
+    };
+  }
+
+  // その他のページ：本文だけを抽出
+  var body = doc.body ? doc.body.cloneNode(true) : doc.createElement("div");
+  $$("script, style, noscript, iframe, svg, header, footer, nav, #navbar, #nav-main, #navFooter, [aria-hidden='true']", body).forEach(function (el) { el.remove(); });
+  return { pageType: "other", url: url, title: clean((doc.querySelector("title") || {}).textContent), text: clean(body.textContent).slice(0, 20000) };
+}
+
+function amazonToMarkdown(d) {
+  var L = [];
+  var esc = function (s) { return String(s).replace(/\|/g, "\\|"); };
+  if (d.pageType === "search") {
+    L.push("# Amazon検索結果" + (d.query ? "：「" + d.query + "」" : ""));
+    if (d.url) L.push("", "URL: " + d.url);
+    L.push("", "件数: " + d.resultCount, "", "| # | 商品名 | 価格 | 評価 | レビュー数 | ASIN | 備考 |", "|---|---|---|---|---|---|---|");
+    d.results.forEach(function (r) {
+      var note = [r.sponsored ? "広告" : "", r.prime ? "Prime" : "", r.listPrice ? "参考価格 " + r.listPrice : ""].filter(Boolean).join(", ");
+      L.push("| " + [r.rank, esc(r.title), r.price || "-", r.rating || "-", r.reviewCount || "-", r.asin || "-", note || ""].join(" | ") + " |");
+    });
+    return L.join("\n");
+  }
+  if (d.pageType === "product") {
+    L.push("# " + d.title, "");
+    var meta = [["ASIN", d.asin], ["URL", d.url], ["ブランド", d.brand], ["カテゴリ", d.categories.join(" > ")], ["価格", d.price], ["参考価格", d.listPrice], ["在庫", d.availability], ["販売元", d.seller], ["評価", d.rating ? d.rating + " / 5" : ""], ["評価数", d.reviewCount], ["売れ筋ランキング", d.salesRank]];
+    meta.forEach(function (m) { if (m[1]) L.push("- **" + m[0] + "**: " + m[1]); });
+    if (d.features.length) { L.push("", "## 商品の特徴"); d.features.forEach(function (f) { L.push("- " + f); }); }
+    if (d.description) L.push("", "## 商品説明", d.description);
+    var keys = Object.keys(d.specs);
+    if (keys.length) { L.push("", "## 仕様・詳細", "| 項目 | 値 |", "|---|---|"); keys.forEach(function (k) { L.push("| " + esc(k) + " | " + esc(d.specs[k]) + " |"); }); }
+    if (d.reviews.length) {
+      L.push("", "## カスタマーレビュー（ページ上の" + d.reviews.length + "件）");
+      d.reviews.forEach(function (r, i) {
+        L.push("", "### " + (i + 1) + ". " + (r.rating ? "★" + r.rating + " " : "") + (r.title || "(無題)"));
+        var by = [r.author, r.date, r.verified ? "Amazonで購入" : ""].filter(Boolean).join(" / ");
+        if (by) L.push("_" + by + "_");
+        if (r.body) L.push("", r.body);
+      });
+    }
+    if (d.images.length) L.push("", "## 画像", d.images.map(function (u) { return "- " + u; }).join("\n"));
+    return L.join("\n");
+  }
+  L.push("# " + (d.title || "ページ本文"));
+  if (d.url) L.push("", "URL: " + d.url);
+  L.push("", d.text);
+  return L.join("\n");
+}
+</script>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = "md";
+  var last = null;
+  var inputSize = 0;
+
+  var SAMPLE = '<html><head><title>サンプル商品ページ</title><link rel="canonical" href="https://www.amazon.co.jp/dp/B0SAMPLE01"></head><body>' +
+    '<header id="navbar">ナビゲーション…</header><script>var tracking=1;<\/script>' +
+    '<div id="wayfinding-breadcrumbs_feature_div"><ul><li><a>ホーム＆キッチン</a></li><li><a>キッチン家電</a></li><li><a>電気ケトル</a></li></ul></div>' +
+    '<span id="productTitle">【サンプル】ステンレス電気ケトル 1.0L 温度調節 保温機能付き</span>' +
+    '<a id="bylineInfo">ブランド: サンプル家電</a>' +
+    '<span id="acrPopover" title="5つ星のうち4.3"><span class="a-icon-alt">5つ星のうち4.3</span></span><span id="acrCustomerReviewText">1,284個の評価</span>' +
+    '<div id="corePriceDisplay_desktop_feature_div"><span class="a-price"><span class="a-offscreen">￥4,980</span></span><span class="a-price a-text-price"><span class="a-offscreen">￥6,800</span></span></div>' +
+    '<div id="availability"><span>在庫あり。</span></div>' +
+    '<div id="feature-bullets"><ul><li>40〜100℃まで5℃刻みで温度設定</li><li>沸騰後60分の保温機能</li><li>内側までステンレスでにおい移りしにくい</li><li>空焚き防止・転倒時お湯漏れ防止</li></ul></div>' +
+    '<div id="productDescription"><p>コーヒーや緑茶など、飲み物に合わせて最適な温度でお湯を沸かせる電気ケトルです。</p></div>' +
+    '<table id="productDetails_techSpec_section_1"><tr><th>容量</th><td>1.0 リットル</td></tr><tr><th>消費電力</th><td>1200 W</td></tr><tr><th>本体重量</th><td>1.1 kg</td></tr></table>' +
+    '<div id="detailBullets_feature_div"><ul><li><span><span class="a-text-bold">ASIN :</span> <span>B0SAMPLE01</span></span></li><li><span><span class="a-text-bold">発売日 :</span> <span>2025/9/1</span></span></li></ul></div>' +
+    '<div data-hook="review"><span class="a-profile-name">山田</span><i data-hook="review-star-rating"><span class="a-icon-alt">5つ星のうち5.0</span></i><a data-hook="review-title"><span class="a-icon-alt">5つ星のうち5.0</span><span>温度設定が便利</span></a><span data-hook="review-date">2026年3月2日に日本でレビュー済み</span><span data-hook="avp-badge">Amazonで購入</span><span data-hook="review-body">80℃で緑茶を淹れるのに重宝しています。沸くのも早いです。</span></div>' +
+    '<div data-hook="review"><span class="a-profile-name">S.K.</span><i data-hook="review-star-rating"><span class="a-icon-alt">5つ星のうち3.0</span></i><a data-hook="review-title"><span>注ぎ口がやや垂れる</span></a><span data-hook="review-date">2026年1月18日に日本でレビュー済み</span><span data-hook="review-body">機能は満足ですが、勢いよく注ぐと少し垂れます。</span></div>' +
+    '<footer id="navFooter">フッター…</footer></body></html>';
+
+  function size(n) { return n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : n > 1024 ? (n / 1024).toFixed(1) + " KB" : n + " B"; }
+
+  function render() {
+    if (!last) { $("out").textContent = "左にHTMLを貼り付けて「変換する」を押してください。"; $("stats").innerHTML = ""; return; }
+    var md = amazonToMarkdown(last);
+    var text = fmt === "json" ? JSON.stringify(last, null, 2)
+      : fmt === "prompt" ? "以下はAmazonのページ内容をAI向けに整理したものです。この情報だけに基づいて、商品の長所・短所・注意点を要約し、購入を検討している人へのアドバイスを書いてください。\n\n---\n\n" + md
+      : md;
+    $("out").textContent = text;
+    var label = { product: "商品ページ", search: "検索結果", other: "その他のページ" }[last.pageType];
+    var outBytes = new Blob([text]).size;
+    var ratio = inputSize ? Math.max(0, 100 - outBytes / inputSize * 100).toFixed(1) : 0;
+    $("stats").innerHTML = '<span class="chip">' + label + '</span>' +
+      '<span>入力 <b>' + size(inputSize) + '</b> → 出力 <b>' + size(outBytes) + '</b>（' + ratio + '% 削減）</span>' +
+      '<span>トークン目安 <b>約' + Math.ceil(text.length * 0.9).toLocaleString() + '</b></span>' +
+      (last.pageType === "other" ? '<span class="warn">商品・検索ページとして認識できなかったため、本文のみ抽出しました</span>' : "");
+  }
+
+  function convert() {
+    var html = $("html-in").value;
+    if (!html.trim()) { $("toast").textContent = "HTMLが空です。ページのソースを貼り付けてください。"; return; }
+    inputSize = new Blob([html]).size;
+    var doc = new DOMParser().parseFromString(html, "text/html");
+    try { last = amazonExtract(doc, $("url-in").value.trim()); $("toast").textContent = ""; }
+    catch (e) { last = null; $("toast").textContent = "変換に失敗しました：" + e.message; }
+    render();
+  }
+
+  function copyText(text, toastEl, fallbackEl) {
+    var done = function () { toastEl.textContent = "コピーしました"; setTimeout(function () { toastEl.textContent = ""; }, 2000); };
+    var fail = function () {
+      if (fallbackEl) { fallbackEl.hidden = false; fallbackEl.value = text; fallbackEl.focus(); fallbackEl.select(); }
+      else { var r = document.createRange(); r.selectNodeContents($("out")); var s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+      toastEl.textContent = "自動コピーできませんでした。選択された部分を手動でコピーしてください。";
+    };
+    try { navigator.clipboard.writeText(text).then(done, fail); } catch (e) { fail(); }
+  }
+
+  // ブックマークレット：同じ抽出コードをAmazonのページ上で実行し、結果をオーバーレイで表示
+  function buildBookmarklet() {
+    var core = $("extractor").textContent;
+    var ui = "var d=amazonExtract(document,location.href),md=amazonToMarkdown(d);" +
+      "var o=document.createElement('div');o.style.cssText='position:fixed;inset:5%;z-index:2147483647;background:#fff;color:#111;border:2px solid #1f6f5c;border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;font:14px sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.3)';" +
+      "var t=document.createElement('textarea');t.value=md;t.style.cssText='flex:1;width:100%;font:12px monospace';" +
+      "var b=document.createElement('button');b.textContent='コピーして閉じる';b.style.cssText='padding:8px;background:#1f6f5c;color:#fff;border:0;border-radius:6px';" +
+      "b.onclick=function(){t.select();try{navigator.clipboard.writeText(md)}catch(e){document.execCommand('copy')}o.remove()};" +
+      "var x=document.createElement('button');x.textContent='閉じる';x.style.cssText='padding:8px';x.onclick=function(){o.remove()};" +
+      "o.append(b,t,x);document.body.appendChild(o);t.select();";
+    var src = core.replace(/^\s*\/\/.*$/gm, "") + ui;
+    return "javascript:(function(){" + encodeURIComponent(src) + "})();";
+  }
+
+  $("convert").onclick = convert;
+  $("sample").onclick = function () { $("html-in").value = SAMPLE; $("url-in").value = ""; convert(); };
+  $("clear").onclick = function () { $("html-in").value = ""; $("url-in").value = ""; last = null; inputSize = 0; render(); };
+  $("file-in").onchange = function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    var r = new FileReader(); r.onload = function () { $("html-in").value = r.result; convert(); }; r.readAsText(f);
+  };
+  document.querySelectorAll(".tab").forEach(function (t) {
+    t.onclick = function () {
+      fmt = t.dataset.fmt;
+      document.querySelectorAll(".tab").forEach(function (x) { x.setAttribute("aria-selected", x === t ? "true" : "false"); });
+      render();
+    };
+  });
+  $("copy").onclick = function () { if (last) copyText($("out").textContent, $("toast")); };
+  $("copy-bm").onclick = function () { copyText(buildBookmarklet(), $("bm-toast"), $("bm-code")); };
+
+  // 開いた時点で使い方が分かるよう、サンプルを変換済みの状態で表示
+  $("html-in").value = SAMPLE; convert();
+})();
+</script>
