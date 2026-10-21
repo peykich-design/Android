@@ -1,10 +1,21 @@
 # Amazon AI Reader
 
 Amazonの商品ページ・検索結果ページのHTMLを、AI（ChatGPT / Claude など）に渡しやすい Markdown / JSON に変換するWebアプリです。
-`index.html` 1ファイルで動き、処理はすべてブラウザ内で完結します（サーバー不要・データ送信なし）。
 
 ## 使い方
-1. `index.html` をブラウザで開く（GitHub Pages 等に置いてもOK）
+
+### URLから変換（サーバー版）
+```
+cd amazon-to-ai
+npm start          # = node server.js（Node.js 18以上、追加インストール不要）
+```
+http://localhost:3000 を開き、AmazonのURL（`amzn.asia` などの短縮URLも可）を入れて「URLから変換」。
+Render / Railway / Fly.io などのNode.js対応ホスティングにもそのまま置けます（`PORT` 環境変数に対応）。
+
+`server.js` はAmazonのドメイン（amazon.co.jp / amazon.com など）と公式短縮URLだけを取得し、それ以外のURLや転送先は拒否します。
+
+### HTMLを貼り付けて変換（サーバー不要）
+1. `index.html` をブラウザで直接開く（GitHub Pages 等の静的ホスティングでもOK）
 2. Amazonのページのソース（PCなら Ctrl+U → 全選択 → コピー）を貼り付けるか、保存した `.html` を読み込む
 3. 「変換する」→ Markdown / JSON / プロンプト付き から選んでコピー
 
@@ -18,5 +29,6 @@ Amazonのページ上で直接変換結果を表示できます。
 - その他のページ: ナビ・スクリプト等を除いた本文
 
 ## 補足
-- サーバーからAmazonを直接取得する方式は、ボット対策でブロックされやすく利用規約上の問題もあるため採用していません。
+- URLからの取得は、Amazonのボット対策でブロック（CAPTCHA）されることがあります。特にクラウドサーバーから多数回アクセスするとブロックされやすいので、個人利用の範囲で使ってください。ブロックされた場合はHTML貼り付けかブックマークレットを使います。
+- Amazonの利用規約は自動取得（スクレイピング）を制限しています。大量取得や再配布には使わないでください。
 - AmazonのHTML構造は頻繁に変わるため、取れない項目が出た場合は `amazonExtract()` のセレクタを調整してください。

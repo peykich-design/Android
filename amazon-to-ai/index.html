@@ -89,15 +89,20 @@ code { font-family: var(--font-mono); font-size: .9em; background: var(--code-bg
 <div class="wrap">
   <header>
     <h1>Amazon AI Reader</h1>
-    <p>Amazonの商品ページや検索結果のHTMLから、広告・スクリプト・レイアウトを取り除き、ChatGPTやClaudeにそのまま渡せるMarkdown/JSONに変換します。処理はすべてこのブラウザ内で行い、データはどこにも送信しません。</p>
+    <p>Amazonの商品ページや検索結果のHTMLから、広告・スクリプト・レイアウトを取り除き、ChatGPTやClaudeにそのまま渡せるMarkdown/JSONに変換します。URLを入れるか、ページのHTMLを貼り付けてください。</p>
     <div class="steps"><span>商品ページ</span><span>検索結果ページ</span><span>その他のページ（本文抽出）</span></div>
   </header>
 
   <div class="grid">
     <section class="pane" aria-labelledby="in-h">
-      <h2 id="in-h">入力：ページのHTML</h2>
+      <h2 id="in-h">入力：URL</h2>
+      <form class="row" id="url-form">
+        <input id="url-in" type="url" inputmode="url" placeholder="https://www.amazon.co.jp/dp/… または amzn.asia の短縮URL" style="flex:1 1 260px">
+        <button class="primary" id="fetch-url" type="submit">URLから変換</button>
+      </form>
+      <p class="note" id="fetch-status" role="status">URLからの取得は、同梱の server.js を起動して開いたときに使えます。</p>
+      <h2>または：ページのHTML</h2>
       <textarea id="html-in" spellcheck="false" placeholder="AmazonページのHTMLをここに貼り付け（PCなら Ctrl+U → 全選択 → コピー）"></textarea>
-      <input id="url-in" type="url" placeholder="元のURL（任意。ASIN補完やリンクに使用）">
       <div class="row">
         <button class="primary" id="convert">変換する</button>
         <label class="btn" for="file-in">HTMLファイルを開く</label>
@@ -351,6 +356,34 @@ function amazonToMarkdown(d) {
     render();
   }
 
+  // server.js の /api/fetch 経由でAmazonのHTMLを取得し、同じ変換処理にかける
+  function fetchUrl(e) {
+    e.preventDefault();
+    var url = $("url-in").value.trim();
+    var st = $("fetch-status");
+    if (!url) { st.textContent = "URLを入力してください。"; return; }
+    st.textContent = "取得中…"; st.className = "note";
+    $("fetch-url").disabled = true;
+    fetch("api/fetch?url=" + encodeURIComponent(url))
+      .then(function (res) {
+        var type = res.headers.get("content-type") || "";
+        if (type.indexOf("application/json") < 0) throw { code: "no-server" };
+        return res.json().then(function (j) { if (!res.ok) throw j; return j; });
+      })
+      .then(function (j) {
+        $("html-in").value = j.html;
+        $("url-in").value = j.url;
+        convert();
+        st.textContent = "取得しました：" + j.url;
+      })
+      .catch(function (err) {
+        st.className = "note warn";
+        st.textContent = err && err.error ? err.error
+          : "URLからの取得にはサーバー版が必要です（このページ単体では他サイトを読み込めません）。server.js を起動して開くか、HTML貼り付け・ブックマークレットを使ってください。";
+      })
+      .then(function () { $("fetch-url").disabled = false; });
+  }
+
   function copyText(text, toastEl, fallbackEl) {
     var done = function () { toastEl.textContent = "コピーしました"; setTimeout(function () { toastEl.textContent = ""; }, 2000); };
     var fail = function () {
@@ -376,6 +409,7 @@ function amazonToMarkdown(d) {
   }
 
   $("convert").onclick = convert;
+  $("url-form").onsubmit = fetchUrl;
   $("sample").onclick = function () { $("html-in").value = SAMPLE; $("url-in").value = ""; convert(); };
   $("clear").onclick = function () { $("html-in").value = ""; $("url-in").value = ""; last = null; inputSize = 0; render(); };
   $("file-in").onchange = function (e) {
