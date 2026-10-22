@@ -8,10 +8,11 @@ Android に限らず、Web・サーバーなど複数のアプリを**アプリ�
 ## リポジトリの構成
 | パス | 内容 |
 |---|---|
-| `app/` ほかルート直下の Gradle 設定 | Android アプリの**雛形**（Jetpack Compose + MVVM テンプレート）。直接は改造しない。ルートの `README.md` はこの雛形の説明 |
+| `android-template/` | Android アプリの**雛形**（Jetpack Compose + MVVM テンプレート）。直接は改造しない。決まりは `android-template/CLAUDE.md` |
 | `amazon-to-ai/` | Amazon のページを AI 向け Markdown/JSON に変換する Web アプリと、URL 取得用の Node サーバー。決まりは `amazon-to-ai/CLAUDE.md` |
 | `amazon-ai-reader-app/` | 上記の Android アプリ版（WebView でページを開いて変換。共有メニュー対応）。決まりは `amazon-ai-reader-app/CLAUDE.md` |
 | `.github/workflows/amazon-ai-reader-app.yml` | Android アプリ版のビルド → エミュレーター確認 → APK をリリースに配置 |
+| `.github/workflows/*-build-and-test-workflow.yml` | 雛形（`android-template/`）のビルドと単体テスト（master への push / PR 時） |
 
 ## 知見ファイルの目次
 | ファイル | 内容 | 読むタイミング |
@@ -34,12 +35,12 @@ Android に限らず、Web・サーバーなど複数のアプリを**アプリ�
 
 ### 新しいアプリは、新しいフォルダで始める
 種類（Android・Web・サーバーなど）に関係なく、新しいアプリは `<アプリ名>/` フォルダを作ってその中で開発する。
-ルート直下にはアプリのファイルを置かない（雛形と、リポジトリ全体の知見ファイル・`CLAUDE.md` だけにする）。
+ルート直下にはアプリのファイルを置かない（リポジトリ全体の知見ファイル・`CLAUDE.md`・`README.md`・`LICENSE` だけにする）。
 フォルダを作ったら、そのフォルダの `CLAUDE.md` を作り、上の「リポジトリの構成」の表に1行追加する。
 CI が必要なら `.github/workflows/<アプリ名>.yml` を作り、`paths: ["<アプリ名>/**"]` でそのフォルダの変更時だけ動かす。
 
 ### Android アプリは「雛形をコピーした新しいフォルダ」で作る
-新しい Android アプリは、ルートの雛形を直接改造せず、`<アプリ名>/` フォルダを作って雛形の必要なファイルをコピーしてから始める。
+新しい Android アプリは、雛形（`android-template/`）を直接改造せず、`<アプリ名>/` フォルダを作って雛形の必要なファイルをコピーしてから始める。
 手順は [build.md](build.md) の「新しいアプリを始める手順」、実例は `amazon-ai-reader-app/`。
 
 ### その他

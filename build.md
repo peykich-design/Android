@@ -1,7 +1,7 @@
 # ビルド・CI の知見
 
 ## 前提：このリポジトリのビルド環境
-- ルート直下は Android アプリの**雛形**（Jetpack Compose + MVVM テンプレート）。
+- `android-template/` は Android アプリの**雛形**（Jetpack Compose + MVVM テンプレート）。2026年10月まではリポジトリのルート直下にあった。
   バージョン：AGP 9.1.0 / Gradle 9.4.0 / Kotlin 2.3.10 / Compose BOM 2026.02.01 / JDK 21 / compileSdk・targetSdk 36。
 - AGP 9 は Kotlin を内蔵している。`app/build.gradle.kts` に `kotlin-android` プラグインは不要で、
   `android { kotlin { compilerOptions { jvmTarget = JvmTarget.JVM_21 } } }` の形で設定する（雛形と同じ書き方にすると安全）。
@@ -9,11 +9,11 @@
   Maven Central も 429（レート制限）になることがある。→ **ビルド確認は GitHub Actions で行う**。
 
 ## 新しいアプリを始める手順（雛形をコピーする）
-新しい Android アプリを開発するときは、ルートの雛形を直接改造せず、**新しいフォルダを作って雛形の必要なファイルをコピーしてから始める**。
+新しい Android アプリを開発するときは、雛形（`android-template/`）を直接改造せず、**新しいフォルダを作って雛形の必要なファイルをコピーしてから始める**。
 `amazon-ai-reader-app/` がこの手順で作った実例。
 
 1. `<アプリ名>/` フォルダを作る
-2. 雛形からコピーする：
+2. 雛形（`android-template/`）からコピーする：
    - `gradlew` / `gradlew.bat` / `gradle/wrapper/*`
    - `gradle.properties`
    - `gradle/libs.versions.toml`（バージョンはそのまま。使うライブラリだけ残す）
@@ -27,7 +27,7 @@
 6. サンドボックスでは APK をビルドできないので、プッシュして GitHub Actions の結果で確認する
 
 ## 新しいアプリのビルド設定（amazon-ai-reader-app で実績あり）
-- 雛形から `gradlew` / `gradlew.bat` / `gradle/wrapper/*` / `gradle.properties` / `app/src/main/res/xml/*` をコピーする。
+- 雛形（`android-template/`）から `gradlew` / `gradlew.bat` / `gradle/wrapper/*` / `gradle.properties` / `app/src/main/res/xml/*` をコピーする。
 - `gradle/libs.versions.toml` は雛形のバージョンをそのまま使い、必要なライブラリだけに絞る（Hilt/Room/KSP などを使わないなら外す）。
 - 依存を最小にすると初回ビルドが速く、失敗要因も減る。
 - フォルダごとに `.gitignore`（`.gradle/` `build/` `local.properties` `.kotlin/`）を置く。ルートの `.gitignore` は `/build` しか除外しない。

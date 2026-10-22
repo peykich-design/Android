@@ -1,4 +1,4 @@
-# バージョンはリポジトリ直下のテンプレート（gradle/libs.versions.toml）に合わせている
+# バージョンは雛形（android-template/gradle/libs.versions.toml）に合わせている
 [versions]
 agp = "9.1.0"
 kotlin = "2.3.10"
