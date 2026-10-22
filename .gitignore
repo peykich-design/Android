@@ -1,12 +1,5 @@
-*.iml
-.gradle
-/local.properties
-/.idea
+# リポジトリ全体で共通の除外設定。アプリごとの設定は各フォルダの .gitignore に書く。
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
+.idea/
+*.iml
 local.properties
-app/schemas
-.kotlin

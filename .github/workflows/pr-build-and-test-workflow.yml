@@ -4,6 +4,9 @@ name: Build and test
 on:
   pull_request:
     branches: [ "master" ]
+    paths:
+      - "android-template/**"
+      - ".github/workflows/pr-build-and-test-workflow.yml"
     types: [ "opened", "reopened", "synchronize", "ready_for_review" ]
 
 jobs:
@@ -12,6 +15,9 @@ jobs:
     if: github.event.pull_request.draft == false
     name: Build app and execute unit tests on PR
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-template
 
     steps:
       - uses: actions/checkout@v4.2.2
@@ -42,4 +48,4 @@ jobs:
         with:
           name: test-reports
           path: |
-            ./**/build/reports/
+            android-template/**/build/reports/
