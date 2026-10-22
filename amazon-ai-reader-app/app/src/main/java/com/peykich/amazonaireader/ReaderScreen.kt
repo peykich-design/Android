@@ -3,6 +3,7 @@ package com.peykich.amazonaireader
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Intent
+import android.view.View
 import android.webkit.WebView
 import android.widget.Toast
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -41,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -129,7 +131,12 @@ fun ReaderScreen(extractorJs: String, sharedUrl: String?, onSharedUrlConsumed: (
             modifier = Modifier
                 .fillMaxSize()
                 .padding(inner)
-                .imePadding()
+                .imePadding(),
+        ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -171,13 +178,6 @@ fun ReaderScreen(extractorJs: String, sharedUrl: String?, onSharedUrlConsumed: (
                     OutlinedButton(onClick = { loading = true; loader.extractCurrent() }, enabled = !loading) { Text("このページを変換") }
                 }
             }
-            // WebView は常に置いておき、普段は見えない高さにしておく（読み込みには表示が要らない）
-            AndroidView(
-                factory = { webView },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(if (showPage) 520.dp else 1.dp),
-            )
 
             if (output != null) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -211,6 +211,17 @@ fun ReaderScreen(extractorJs: String, sharedUrl: String?, onSharedUrlConsumed: (
                     }
                 }
             }
+        }
+            // WebView はスクロール領域の外に置く。スクロールの中に置くと白い背景が画面全体を覆ってしまうため。
+            // 普段は INVISIBLE（描画しないがページの読み込みとJavaScriptは動く）にしておく。
+            AndroidView(
+                factory = { webView },
+                update = { it.visibility = if (showPage) View.VISIBLE else View.INVISIBLE },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(if (showPage) 420.dp else 1.dp)
+                    .clipToBounds(),
+            )
         }
     }
 }

@@ -57,3 +57,38 @@ jobs:
             --target "${{ github.sha }}" --prerelease \
             --title "Amazon AI Reader (最新ビルド)" \
             --notes "ブランチ ${{ github.ref_name }} の最新ビルドです。amazon-ai-reader.apk をダウンロードしてインストールしてください。"
+
+  # ビルドしたAPKをエミュレーターで起動し、スクリーンショットとログを「amazon-ai-reader-check」リリースに置く
+  device-check:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: amazon-ai-reader-apk
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: bash amazon-ai-reader-app/tools/device-check.sh amazon-ai-reader.apk
+
+      - name: Publish results
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete amazon-ai-reader-check --yes --cleanup-tag || true
+          gh release create amazon-ai-reader-check out/* --target "${{ github.sha }}" --prerelease \
+            --title "Amazon AI Reader 動作確認結果" --notes "エミュレーターでの起動確認（スクリーンショットとログ）"
