@@ -1,5 +1,8 @@
 # AI API 連携の知見
 
+> **定期的に見直す**：モデル名は数か月で入れ替わる。AI を使う機能を触るときは、下の既定モデルがまだ現行かを確認し、日付を更新する。
+> 最終確認：2026-10-22（Claude `claude-opus-5-5` / Gemini `gemini-3.8-flash`）
+
 ## Claude API（Android / Kotlin）
 - Kotlin からは Anthropic 公式 Java SDK `com.anthropic:anthropic-java`（2.34.0 で実績あり）を使う。Android（minSdk 26、AGP 9.1）でそのままビルドできた。
   - 依存の Jackson / OkHttp が同名のライセンスファイルを持つので、`packaging.resources.excludes` に

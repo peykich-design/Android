@@ -13,6 +13,7 @@ Android に限らず、Web・サーバーなど複数のアプリを**アプリ�
 | `amazon-ai-reader-app/` | 上記の Android アプリ版（WebView でページを開いて変換。共有メニュー対応）。決まりは `amazon-ai-reader-app/CLAUDE.md` |
 | `.github/workflows/amazon-ai-reader-app.yml` | Android アプリ版のビルド → エミュレーター確認 → APK をリリースに配置 |
 | `.github/workflows/*-build-and-test-workflow.yml` | 雛形（`android-template/`）のビルドと単体テスト（master への push / PR 時） |
+| `.github/workflows/gemini.yml` | Issue やコメントに `@gemini-cli` と書くと Gemini CLI が応答する（リポジトリの Secret `GEMINI_API_KEY` を使用）。アプリのビルドとは無関係 |
 
 ## 知見ファイルの目次
 | ファイル | 内容 | 読むタイミング |
@@ -43,6 +44,23 @@ CI が必要なら `.github/workflows/<アプリ名>.yml` を作り、`paths: ["
 新しい Android アプリは、雛形（`android-template/`）を直接改造せず、`<アプリ名>/` フォルダを作って雛形の必要なファイルをコピーしてから始める。
 手順は [build.md](build.md) の「新しいアプリを始める手順」、実例は `amazon-ai-reader-app/`。
 
-### その他
+### 作業の進め方
+- 作業は作業ブランチで行い、プルリクエストを作って master に取り込む。master へ直接プッシュしない。
+- 新しいセッションは master から始まる。`CLAUDE.md` や知見ファイルの更新も、master に取り込まれて初めて次回以降に読み込まれる。
 - 作業ブランチにだけあるワークフローは手動実行（workflow_dispatch）できない。`push` トリガーで動かす。
+
+### 完了と報告する前に確かめること
+- 画面を変えたら、CI のエミュレーター確認のスクリーンショットを実際に見てから「完了」と報告する（ビルド成功だけでは足りない。白い画面を見逃した前例がある）。
+- 確認できなかったこと（API キーが必要な呼び出し、実ページでの変換など）は、確認できていないと明記して報告する。
+
+### 言語
+- ユーザーとのやりとり、`CLAUDE.md`・知見ファイル・README などのドキュメント、アプリの画面の文言は日本語。
+- コミットメッセージとプルリクエストのタイトルは英語。
+
+### 秘密情報
+- API キー・トークン・パスワードはリポジトリに入れない（コード、設定ファイル、ドキュメント、テスト用データを含む）。
+  CI で必要なものは GitHub の Secrets に置く（例：`GEMINI_API_KEY`）。アプリでは利用者が画面から入力する。
+- 例外は、公開して問題ないと決めた個人インストール用の署名鍵 `amazon-ai-reader-app/app/signing.keystore` だけ。
+
+### その他
 - ユーザーはスマホから操作していることが多い。手順は短く、スマホで実行できる形で案内する。
