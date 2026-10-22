@@ -11,7 +11,7 @@ Android に限らず、Web・サーバーなど複数のアプリを**アプリ�
 | `android-template/` | Android アプリの**雛形**（Jetpack Compose + MVVM テンプレート）。直接は改造しない。決まりは `android-template/CLAUDE.md` |
 | `amazon-to-ai/` | Amazon のページを AI 向け Markdown/JSON に変換する Web アプリと、URL 取得用の Node サーバー。決まりは `amazon-to-ai/CLAUDE.md` |
 | `amazon-ai-reader-app/` | 上記の Android アプリ版（WebView でページを開いて変換。共有メニュー対応）。決まりは `amazon-ai-reader-app/CLAUDE.md` |
-| `.github/workflows/amazon-ai-reader-app.yml` | Android アプリ版のビルド → エミュレーター確認 → APK をリリースに配置 |
+| `.github/workflows/amazon-ai-reader-app.yml` | Android アプリ版のビルドと単体テスト → APK をリリースに配置（エミュレーター確認は指定したときだけ） |
 | `.github/workflows/*-build-and-test-workflow.yml` | 雛形（`android-template/`）のビルドと単体テスト（master への push / PR 時） |
 | `.github/workflows/gemini.yml` | Issue やコメントに `@gemini-cli` と書くと Gemini CLI が応答する（リポジトリの Secret `GEMINI_API_KEY` を使用）。アプリのビルドとは無関係 |
 
@@ -48,7 +48,7 @@ CI が必要なら `.github/workflows/<アプリ名>.yml` を作り、`paths: ["
 - 作業は作業ブランチで行い、プルリクエストを作って master に取り込む。master へ直接プッシュしない。
 - 新しいセッションは master から始まる。`CLAUDE.md` や知見ファイルの更新も、master に取り込まれて初めて次回以降に読み込まれる。
 - **プルリクエストは、次のタイミングで Claude が自分から作る**（ユーザーの指示を待たない）：
-  1. 機能の追加や不具合の修正がひと区切りついたとき。CI のビルドと、画面を変えた場合はエミュレーター確認が通ってから作る
+  1. 機能の追加や不具合の修正がひと区切りついたとき。CI のビルドとユニットテストが通ってから作る
   2. `CLAUDE.md` や知見ファイルを更新したとき（次回のセッションに引き継ぐため、早めに出す）
   3. ユーザーから「PRを作って」と言われたとき
   作業の途中や、確認が通っていない状態では作らない。1つのプルリクエストには1つの機能・修正だけを入れ、スマホで確認できる大きさに保つ。
@@ -57,9 +57,12 @@ CI が必要なら `.github/workflows/<アプリ名>.yml` を作り、`paths: ["
 - マージ後に新しい作業を始めるときは、master の最新から作業ブランチを作り直す（マージ済みの履歴の上に積み足さない）。
 - 作業ブランチにだけあるワークフローは手動実行（workflow_dispatch）できない。`push` トリガーで動かす。
 
-### 完了と報告する前に確かめること
-- 画面を変えたら、CI のエミュレーター確認のスクリーンショットを実際に見てから「完了」と報告する（ビルド成功だけでは足りない。白い画面を見逃した前例がある）。
-- 確認できなかったこと（API キーが必要な呼び出し、実ページでの変換など）は、確認できていないと明記して報告する。
+### 動作確認のルール
+- 通常はビルド成功とユニットテストで確認する。エミュレーターは使わない。
+- 起動しない・画面が真っ白・クラッシュするなど、実行しないと原因が特定できない場合のみエミュレーターを使ってよい。
+  動かし方（コミットメッセージに `[emulator]` を含める等）は [testing.md](testing.md)。
+- エミュレーターを使ったら、確認した内容と原因を報告すること。
+- 確認できなかったこと（API キーが必要な呼び出し、実ページでの変換、画面の見た目など）は、確認できていないと明記して報告する。
 
 ### 言語
 - ユーザーとのやりとり、`CLAUDE.md`・知見ファイル・README などのドキュメント、アプリの画面の文言は日本語。

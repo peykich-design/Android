@@ -1,5 +1,8 @@
-# amazon-ai-reader-app をビルドし、APKを「amazon-ai-reader-latest」リリースに置く。
+# amazon-ai-reader-app をビルド・単体テストし、APKを「amazon-ai-reader-latest」リリースに置く。
 # スマホからはリリースページを開いて APK をダウンロードするだけでインストールできる。
+# エミュレーター確認（device-check）は、CLAUDE.md の「動作確認のルール」で許された場合だけ動かす：
+#   - コミットメッセージに [emulator] を含めてプッシュする
+#   - または Actions の手動実行で emulator を true にする
 name: Amazon AI Reader app
 
 on:
@@ -8,6 +11,11 @@ on:
       - "amazon-ai-reader-app/**"
       - ".github/workflows/amazon-ai-reader-app.yml"
   workflow_dispatch:
+    inputs:
+      emulator:
+        description: "エミュレーターでの起動確認も行う"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -37,7 +45,7 @@ jobs:
       - name: Build APK
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleDebug --stacktrace
+          ./gradlew assembleDebug testDebugUnitTest --stacktrace
 
       - name: Rename APK
         run: cp app/build/outputs/apk/debug/app-debug.apk amazon-ai-reader.apk
@@ -61,6 +69,7 @@ jobs:
   # ビルドしたAPKをエミュレーターで起動し、スクリーンショットとログを「amazon-ai-reader-check」リリースに置く
   device-check:
     needs: build
+    if: (github.event_name == 'workflow_dispatch' && inputs.emulator) || contains(github.event.head_commit.message, '[emulator]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4.2.2
