@@ -17,6 +17,7 @@
 | [testing.md](testing.md) | CI のエミュレーターで画面・ログを取る方法と注意点、Playwright での Web 確認、ダミー応答でのサーバー確認 | 動作確認をするとき。アプリが起動しない・落ちる原因を調べるとき |
 | [android.md](android.md) | Compose と WebView の落とし穴（白い画面）、WebView からの読み取り、共有メニュー対応、インストール時のトラブル | Android アプリの画面や機能を実装するとき |
 | [amazon.md](amazon.md) | Amazon ページの取得方法の比較、URL の正規化と許可ドメイン、CAPTCHA の見分け方、HTML 構造、評価表記などの落とし穴 | 変換ロジック（extractor）や取得処理を直すとき |
+| [ai-api.md](ai-api.md) | Claude（Java SDK）・Gemini（REST）の呼び出し方、Android での注意点、プロンプトの書き方 | AI の API を使う機能を作る・直すとき |
 | [environment.md](environment.md) | サンドボックスで繋がる/繋がらない先、Artifact の制限、ユーザーの端末環境（Termux + Ubuntu） | 環境が原因っぽいエラーのとき。ユーザーに操作手順を案内するとき |
 
 新しい知見が得られたら、該当するファイルに追記する。いつ・何を・どう書くかは [knowledge.md](knowledge.md) に従う。

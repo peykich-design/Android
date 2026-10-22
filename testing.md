@@ -19,6 +19,7 @@
   → テスト前に `sleep 120` で落ち着かせる。
 - `adb shell am start ... --es android.intent.extra.TEXT` に空白を含む文字列を渡すときは
   `"'テスト https://...'"` のように二重に引用する（しないと端末側で分割され、共有先の選択画面が出てしまう）。
+- 画面の文字をタップするには、uiautomator の画面構造から `text="..."` の `bounds` を探して中心を `adb shell input tap` する（`tap_text` 関数。実例：`amazon-ai-reader-app/tools/device-check.sh`）。タブを切り替えて各画面を撮影できる。
 - 共有インテントのテスト：`am start -a android.intent.action.SEND -t text/plain --es android.intent.extra.TEXT "'...'" -n <pkg>/.MainActivity`
 - GitHub のサーバーから Amazon を開くと必ず確認画面（CAPTCHA）になるので、実際の変換結果はエミュレーターでは確認できない。
 

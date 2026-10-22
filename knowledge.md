@@ -26,6 +26,7 @@
 | 動作確認の方法、テストの落とし穴 | testing.md |
 | Android の実装（画面、WebView、インテントなど） | android.md |
 | Amazon のページや取得処理 | amazon.md |
+| AI の API（Claude、Gemini）の呼び出し・プロンプト | ai-api.md |
 | サンドボックス、Artifact、ユーザーの端末 | environment.md |
 
 - どれにも当てはまらず、同じ分野の知見が今後も増えそうなら、新しいファイル（例：`network.md`）を作り、CLAUDE.md の「知見ファイルの目次」に1行追加する。
