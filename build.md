@@ -20,6 +20,7 @@
    - `settings.gradle.kts` / `build.gradle.kts` / `app/build.gradle.kts` の書き方（`rootProject.name`・`namespace`・`applicationId` を変える）
    - `app/src/main/res/xml/*`（バックアップ設定）
 3. フォルダ専用の `.gitignore` を置く
+   あわせてフォルダ専用の `CLAUDE.md`（構成・そのアプリだけの決まり）を作り、ルート CLAUDE.md の「リポジトリの構成」に追加する
 4. スマホにインストールするなら固定の署名鍵を作る（下の「署名」）
 5. `.github/workflows/<アプリ名>.yml` を作り、`paths: ["<アプリ名>/**"]` でそのフォルダの変更時だけビルドする。
    エミュレーター確認のジョブも付ける（testing.md）
