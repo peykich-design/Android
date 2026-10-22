@@ -3,6 +3,8 @@
 set -x
 PKG=com.peykich.amazonaireader
 mkdir -p out
+# 起動直後はGoogleのシステムアプリが再起動して、巻き添えでアプリが終了させられることがあるので落ち着くまで待つ
+sleep 120
 adb install -r "${1:-app.apk}"
 adb logcat -c
 adb shell am start -W -n $PKG/.MainActivity
