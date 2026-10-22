@@ -8,6 +8,23 @@
 - Claude Code のクラウド環境（サンドボックス）には **Android SDK がなく、`dl.google.com` にも接続できない**ため、APK はローカルでビルドできない。
   Maven Central も 429（レート制限）になることがある。→ **ビルド確認は GitHub Actions で行う**。
 
+## 新しいアプリを始める手順（雛形をコピーする）
+新しい Android アプリを開発するときは、ルートの雛形を直接改造せず、**新しいフォルダを作って雛形の必要なファイルをコピーしてから始める**。
+`amazon-ai-reader-app/` がこの手順で作った実例。
+
+1. `<アプリ名>/` フォルダを作る
+2. 雛形からコピーする：
+   - `gradlew` / `gradlew.bat` / `gradle/wrapper/*`
+   - `gradle.properties`
+   - `gradle/libs.versions.toml`（バージョンはそのまま。使うライブラリだけ残す）
+   - `settings.gradle.kts` / `build.gradle.kts` / `app/build.gradle.kts` の書き方（`rootProject.name`・`namespace`・`applicationId` を変える）
+   - `app/src/main/res/xml/*`（バックアップ設定）
+3. フォルダ専用の `.gitignore` を置く
+4. スマホにインストールするなら固定の署名鍵を作る（下の「署名」）
+5. `.github/workflows/<アプリ名>.yml` を作り、`paths: ["<アプリ名>/**"]` でそのフォルダの変更時だけビルドする。
+   エミュレーター確認のジョブも付ける（testing.md）
+6. サンドボックスでは APK をビルドできないので、プッシュして GitHub Actions の結果で確認する
+
 ## 新しいアプリのビルド設定（amazon-ai-reader-app で実績あり）
 - 雛形から `gradlew` / `gradlew.bat` / `gradle/wrapper/*` / `gradle.properties` / `app/src/main/res/xml/*` をコピーする。
 - `gradle/libs.versions.toml` は雛形のバージョンをそのまま使い、必要なライブラリだけに絞る（Hilt/Room/KSP などを使わないなら外す）。
