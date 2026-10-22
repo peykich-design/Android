@@ -3,6 +3,10 @@ name: Amazon AI Reader device check
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/amazon-ai-reader-app-check.yml"
+      - "amazon-ai-reader-app/tools/**"
 
 permissions:
   contents: write
