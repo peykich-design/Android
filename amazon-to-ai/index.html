@@ -151,10 +151,35 @@ function amazonExtract(doc, pageUrl) {
   var clean = function (s) { return (s || "").replace(/[‎‏ ]/g, " ").replace(/\s+/g, " ").trim(); };
   var $ = function (sel, root) { return (root || doc).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || doc).querySelectorAll(sel)); };
-  var txt = function (sel, root) { var el = $(sel, root); return el ? clean(el.textContent) : ""; };
+  // script/style の中身（Amazonのページに大量に埋め込まれている）を除いて文字だけを集める
+  var textOf = function (el) {
+    if (!el) return "";
+    var out = [];
+    (function walk(n) {
+      if (n.nodeType === 3) { out.push(n.nodeValue); return; }
+      if (n.nodeType !== 1 || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(n.nodeName)) return;
+      for (var c = n.firstChild; c; c = c.nextSibling) walk(c);
+      if (/^(P|DIV|BR|LI)$/.test(n.nodeName)) out.push(" ");
+    })(el);
+    return clean(out.join(""));
+  };
+  var txt = function (sel, root) { return textOf($(sel, root)); };
   var first = function (sels, root) { for (var i = 0; i < sels.length; i++) { var t = txt(sels[i], root); if (t) return t; } return ""; };
   // 「5つ星のうち4.2」「4.2 out of 5 stars」どちらの表記からも評価値を取り出す
-  var star = function (s) { var m = (s || "").match(/5つ星のうち\s*([\d.]+)/) || (s || "").match(/([\d.]+)\s*out of/) || (s || "").match(/[\d.]+/); return m ? (m[1] || m[0]) : ""; };
+  var star = function (s) { s = (s || "").replace(/,/g, "."); var m = s.match(/5\s*つ星のうち\s*([\d.]+)/) || s.match(/([\d.]+)\s*out of/) || s.match(/[\d.]+/); return m ? (m[1] || m[0]) : ""; };
+  // 星アイコンのクラス名（a-star-4 / a-star-4-5）からも評価値を読めるようにする
+  var starOf = function (root, sels) {
+    for (var i = 0; i < sels.length; i++) {
+      var el = $(sels[i], root);
+      if (!el) continue;
+      var alt = textOf(el.matches(".a-icon-alt") ? el : $(".a-icon-alt", el) || el);
+      if (alt && /[\d]/.test(alt)) return star(alt);
+      var icon = el.closest("i") || $("i", el) || el;
+      var cm = (icon.className || "").match(/a-star-(?:small-|mini-|medium-)?(\d)(?:-(\d))?/);
+      if (cm) return cm[2] ? cm[1] + "." + cm[2] : cm[1] + ".0";
+    }
+    return "";
+  };
   var abs = function (href) { try { return new URL(href, pageUrl || "https://www.amazon.co.jp/").href; } catch (e) { return href || ""; } };
 
   var canonical = ($('link[rel="canonical"]') || {}).href || "";
@@ -203,7 +228,7 @@ function amazonExtract(doc, pageUrl) {
       var spans = $$("span.a-text-bold", li);
       if (spans.length) { var k = clean(spans[0].textContent); addSpec(k, clean(li.textContent).replace(k, "")); }
     });
-    delete specs["カスタマーレビュー"]; delete specs["Customer Reviews"]; delete specs["Amazon 売れ筋ランキング"]; delete specs["Best Sellers Rank"];
+    delete specs["おすすめ度"]; delete specs["カスタマーレビュー"]; delete specs["Customer Reviews"]; delete specs["Amazon 売れ筋ランキング"]; delete specs["Best Sellers Rank"];
 
     var rankText = "";
     $$("#detailBullets_feature_div li, #productDetails_detailBullets_sections1 tr, #SalesRank").forEach(function (el) {
@@ -222,16 +247,35 @@ function amazonExtract(doc, pageUrl) {
     var ratingRaw = first(["#acrPopover .a-icon-alt", '[data-hook="rating-out-of-text"]', "#averageCustomerReviews .a-icon-alt"]);
     var ratingTitle = ($("#acrPopover") || { getAttribute: function () { return ""; } }).getAttribute("title") || "";
 
-    var reviews = $$('[data-hook="review"]').slice(0, 20).map(function (rv) {
+    var reviews = $$('[data-hook="review"], #cm-cr-dp-review-list > li, .review[id^="R"]').filter(function (rv, i, all) {
+      return all.indexOf(rv.parentElement && rv.parentElement.closest('[data-hook="review"]')) < 0;
+    }).slice(0, 20).map(function (rv) {
+      var starSels = ['[data-hook="review-star-rating"]', '[data-hook="cmps-review-star-rating"]', 'i[class*="a-star"]', ".a-icon-alt"];
       var rt = $('[data-hook="review-title"]', rv);
-      var titleSpans = rt ? $$("span", rt).map(function (s) { return clean(s.textContent); }).filter(function (s) { return s && !/5つ星のうち|out of 5/.test(s); }) : [];
+      var title = "";
+      if (rt) {
+        var t = rt.cloneNode(true);
+        Array.prototype.slice.call(t.querySelectorAll("i, .a-icon-alt, .a-letter-space")).forEach(function (x) { x.remove(); });
+        title = textOf(t);
+      }
+      var author = txt(".a-profile-name", rv);
+      var date = txt('[data-hook="review-date"]', rv);
+      var body = first(['[data-hook="review-body"] [data-hook="review-collapsed"]', '[data-hook="review-body"]', ".review-text-content", ".review-text", '[data-hook="review-collapsed"]'], rv);
+      if (!body) {
+        // 構造が変わっていても、レビュー内で一番長い文章を本文として拾う
+        $$("span, div", rv).forEach(function (el) {
+          if (el.children.length > 3) return;
+          var t2 = textOf(el);
+          if (t2.length > body.length && t2.length > 15 && t2 !== title && t2 !== date && t2.indexOf(author + " ") !== 0 && !/つ星のうち|out of 5|役に立った|helpful|レビュー済み|Reviewed in/.test(t2)) body = t2;
+        });
+      }
       return {
-        author: txt(".a-profile-name", rv),
-        rating: star(first(['[data-hook="review-star-rating"] .a-icon-alt', '[data-hook="cmps-review-star-rating"] .a-icon-alt', ".a-icon-alt"], rv)),
-        title: titleSpans.length ? titleSpans[titleSpans.length - 1] : (rt ? clean(rt.textContent) : ""),
-        date: txt('[data-hook="review-date"]', rv),
-        verified: !!$('[data-hook="avp-badge"]', rv),
-        body: txt('[data-hook="review-body"]', rv)
+        author: author,
+        rating: starOf(rv, starSels),
+        title: title,
+        date: date,
+        verified: !!$('[data-hook="avp-badge"], [data-hook="avp-badge-linkless"]', rv),
+        body: body.replace(/\s*(続きを読む|Read more|もっと見る)\s*$/, "")
       };
     });
     var rating = star(ratingRaw || ratingTitle);
