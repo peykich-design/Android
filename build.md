@@ -53,7 +53,7 @@
 - `gh release delete <tag> --yes --cleanup-tag || true` → `gh release create <tag> file.apk --prerelease --target $GITHUB_SHA` で
   **固定タグのリリースに毎回上書き**すると、常に同じ URL で最新 APK を配れる。
   `permissions: contents: write` と `GH_TOKEN: ${{ github.token }}` が必要。
-- 例：`https://github.com/peykich-design/Android/releases/download/amazon-ai-reader-latest/amazon-ai-reader.apk`
+- 例：`https://github.com/peykich-design/Application/releases/download/amazon-ai-reader-latest/amazon-ai-reader.apk`
 - prerelease は `releases/latest` API には出てこない。確認は `releases/tags/<tag>` で行う。
 
 ## CI の結果をサンドボックスから見る方法

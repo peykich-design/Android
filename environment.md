@@ -19,7 +19,11 @@
   - Ubuntu に入る：`proot-distro login ubuntu`
   - Ubuntu 内のサーバーには Android の Chrome から `http://localhost:<port>` で接続できる。
   - Termux がバックグラウンドで止まるときは通知の「Acquire wakelock」。サーバー停止は CTRL → c。
-- リポジトリは公開（`git clone` に認証不要）。
+- リポジトリは公開（`git clone` に認証不要）。2026年10月に `peykich-design/Android` から `peykich-design/Application` に改名した。
+  旧 URL（クローン・リリースのダウンロード）は GitHub が転送するので動くが、新しく書くものは新しい名前を使う。
+  ユーザーの Termux 内のクローンは `~/Android` フォルダのまま（`git remote set-url origin https://github.com/peykich-design/Application` で切り替え可能）。
+- リポジトリを改名したら、Claude Code のセッションは旧名で紐づいたままになる。`add_repo` で新しい名前を追加し、
+  作業フォルダで `git remote set-url origin <新URL>` すれば、同じフォルダのままプッシュできる。
 
 ## ユーザーへの案内のコツ
 - 操作手順はスマホで実行できる形（コピーしやすい短いコマンド、画面上のボタン名）で書く。
