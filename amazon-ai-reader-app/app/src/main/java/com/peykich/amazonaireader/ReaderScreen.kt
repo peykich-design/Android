@@ -53,6 +53,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 
+private enum class Tab(val label: String) { Convert("変換"), Compare("比較"), Settings("設定") }
+
 private enum class Format(val label: String) { Markdown("Markdown"), Json("JSON"), Prompt("プロンプト付き") }
 
 private const val PROMPT_HEADER =
@@ -79,6 +81,12 @@ fun ReaderScreen(extractorJs: String, sharedUrl: String?, onSharedUrlConsumed: (
     var captcha by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<ExtractResult?>(null) }
     var format by rememberSaveable { mutableStateOf(Format.Markdown) }
+    var tab by rememberSaveable { mutableStateOf(Tab.Convert) }
+    val store = remember { AppStore(context) }
+    var settings by remember { mutableStateOf(store.loadSettings()) }
+    var products by remember { mutableStateOf(store.loadProducts()) }
+
+    fun updateProducts(list: List<SavedProduct>) { products = list; store.saveProducts(list) }
 
     val webView = remember { WebView(context) }
     val loader = remember {
@@ -113,6 +121,7 @@ fun ReaderScreen(extractorJs: String, sharedUrl: String?, onSharedUrlConsumed: (
     LaunchedEffect(sharedUrl) {
         if (sharedUrl != null) {
             url = sharedUrl
+            tab = Tab.Convert
             onSharedUrlConsumed()
             start(sharedUrl)
         }
@@ -142,6 +151,23 @@ fun ReaderScreen(extractorJs: String, sharedUrl: String?, onSharedUrlConsumed: (
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text("Amazon AI Reader", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Tab.entries.forEach { t ->
+                    val label = if (t == Tab.Compare && products.isNotEmpty()) "${t.label}（${products.size}）" else t.label
+                    FilterChip(selected = tab == t, onClick = { tab = t }, label = { Text(label) })
+                }
+            }
+
+            when (tab) {
+            Tab.Compare -> CompareTab(
+                products = products,
+                onRemove = { p -> updateProducts(products - p) },
+                onClear = { updateProducts(emptyList()) },
+                settings = settings,
+                onOpenSettings = { tab = Tab.Settings },
+            )
+            Tab.Settings -> SettingsTab(settings) { settings = it; store.saveSettings(it) }
+            Tab.Convert -> {
 
             OutlinedTextField(
                 value = url,
@@ -196,6 +222,23 @@ fun ReaderScreen(extractorJs: String, sharedUrl: String?, onSharedUrlConsumed: (
                         context.startActivity(Intent.createChooser(send, "AIアプリに送る"))
                     }) { Text("共有") }
                 }
+                val product = result?.let { AppStore.productFrom(it) }
+                if (product != null) {
+                    val added = products.any { it.asin.isNotEmpty() && it.asin == product.asin }
+                    OutlinedButton(
+                        enabled = !added && products.size < AppStore.MAX_PRODUCTS,
+                        onClick = {
+                            updateProducts(products + product)
+                            Toast.makeText(context, "比較リストに追加しました（${products.size}件）", Toast.LENGTH_SHORT).show()
+                        },
+                    ) {
+                        Text(when {
+                            added -> "比較リストに追加済み"
+                            products.size >= AppStore.MAX_PRODUCTS -> "比較リストがいっぱいです（最大${AppStore.MAX_PRODUCTS}件）"
+                            else -> "比較リストに追加"
+                        })
+                    }
+                }
                 Card(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
                     modifier = Modifier.fillMaxWidth(),
@@ -211,15 +254,17 @@ fun ReaderScreen(extractorJs: String, sharedUrl: String?, onSharedUrlConsumed: (
                     }
                 }
             }
+            }
+            }
         }
             // WebView はスクロール領域の外に置く。スクロールの中に置くと白い背景が画面全体を覆ってしまうため。
             // 普段は INVISIBLE（描画しないがページの読み込みとJavaScriptは動く）にしておく。
             AndroidView(
                 factory = { webView },
-                update = { it.visibility = if (showPage) View.VISIBLE else View.INVISIBLE },
+                update = { it.visibility = if (showPage && tab == Tab.Convert) View.VISIBLE else View.INVISIBLE },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(if (showPage) 420.dp else 1.dp)
+                    .height(if (showPage && tab == Tab.Convert) 420.dp else 1.dp)
                     .clipToBounds(),
             )
         }
