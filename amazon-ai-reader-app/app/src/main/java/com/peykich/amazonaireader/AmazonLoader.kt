@@ -27,6 +27,8 @@ class AmazonLoader(
 ) {
     private val handler = Handler(Looper.getMainLooper())
     private var running = false
+    // CAPTCHA 画面のあと、ユーザーが解いて次のページに進んだら自動で変換を再開する
+    private var resumeAfterCaptcha = false
     private var pending: Runnable? = null
 
     init {
@@ -53,6 +55,11 @@ class AmazonLoader(
             }
 
             override fun onPageFinished(view: WebView, url: String) {
+                if (resumeAfterCaptcha) {
+                    resumeAfterCaptcha = false
+                    running = true
+                    handler.postDelayed(timeout, TIMEOUT_MS)
+                }
                 if (running) scheduleExtract()
             }
         }
@@ -66,6 +73,7 @@ class AmazonLoader(
         }
         cancelTimers()
         running = true
+        resumeAfterCaptcha = false
         onStatus("ページを読み込み中…")
         webView.loadUrl(url)
         handler.postDelayed(timeout, TIMEOUT_MS)
@@ -82,6 +90,7 @@ class AmazonLoader(
     fun stop() {
         cancelTimers()
         running = false
+        resumeAfterCaptcha = false
         webView.stopLoading()
     }
 
@@ -139,6 +148,7 @@ class AmazonLoader(
                     ?: throw IllegalStateException("結果が空です")
                 val obj = JSONObject(json)
                 if (obj.optBoolean("captcha")) {
+                    resumeAfterCaptcha = true
                     onCaptcha()
                 } else {
                     onResult(ExtractResult(obj.getString("md"), obj.getJSONObject("data")))

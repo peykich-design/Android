@@ -88,7 +88,7 @@ fun ReaderScreen(extractorJs: String, sharedUrl: String?, onSharedUrlConsumed: (
             onStatus = { status = it; isError = false },
             onCaptcha = {
                 loading = false; captcha = true; showPage = true; isError = true
-                status = "Amazonに確認画面（CAPTCHA）が表示されました。下のページで文字を入力してから「このページを変換」を押してください。"
+                status = "Amazonに確認画面（CAPTCHA）が表示されました。下のページでボタンを押すか文字を入力すると、自動で変換を続けます。"
             },
             onResult = {
                 loading = false; captcha = false; showPage = false; isError = false
