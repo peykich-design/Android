@@ -26,7 +26,9 @@ Amazon AI Reader の Android アプリ版。WebView で Amazon のページを�
 
 ## ビルドと確認
 - サンドボックスではビルドできない。プッシュすると `.github/workflows/amazon-ai-reader-app.yml` が
-  ビルド → エミュレーター確認 → リリース配置まで行う（約15分）。
+  ビルドと単体テスト → リリース配置まで行う（約5分）。
+- エミュレーター確認（`tools/device-check.sh`）は、ルートの CLAUDE.md「動作確認のルール」で許された場合だけ、
+  コミットメッセージに `[emulator]` を含めて動かす（約15分）。
 - 最新 APK：https://github.com/peykich-design/Application/releases/download/amazon-ai-reader-latest/amazon-ai-reader.apk
 - 確認結果（スクリーンショット・画面構造・logcat）：リリース `amazon-ai-reader-check` の
   `1-launch.png` / `2-share.png` / `*.xml` / `logcat.txt`。

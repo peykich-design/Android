@@ -2,6 +2,11 @@
 
 ## Android アプリ：エミュレーターで確認する（GitHub Actions）
 サンドボックスには SDK もエミュレーターもないので、CI 上のエミュレーターで実機確認の代わりをする。
+**使うのは CLAUDE.md の「動作確認のルール」で許された場合だけ**（起動しない・真っ白・クラッシュなど、実行しないと原因が分からないとき）。
+動かし方：コミットメッセージに `[emulator]` を含めてプッシュする。master にある `amazon-ai-reader-app.yml` なら、
+Actions の手動実行（`workflow_dispatch`、入力 `emulator: true`）で作業ブランチを指定しても動かせる。
+- 判定はコミットメッセージ全体（本文を含む）に対して行われる。本文で説明のために `[emulator]` と書いても動いてしまう（実際に起きた）。
+  使わないときは、コミットメッセージのどこにもこの文字列を書かない。
 実装例：`.github/workflows/amazon-ai-reader-app.yml` の `device-check` ジョブと `amazon-ai-reader-app/tools/device-check.sh`。
 
 - ビルドジョブの後に `needs: build` で実行し、APK は `actions/upload-artifact` → `download-artifact` で受け渡す。
