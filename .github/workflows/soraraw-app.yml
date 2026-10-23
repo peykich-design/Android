@@ -62,7 +62,6 @@ jobs:
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
-          echo "インストール済みの SDK: $(ls "$ANDROID_HOME/platforms" | tr "\n" " ")"
           ./gradlew assembleRelease testDebugUnitTest --stacktrace
           cp app/build/outputs/apk/release/app-release.apk soraraw.apk
 

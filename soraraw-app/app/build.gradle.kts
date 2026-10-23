@@ -14,12 +14,12 @@ val hasReleaseKey = releaseKeystore != null && file(releaseKeystore).exists()
 
 android {
     namespace = "com.peykich.soraraw"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.peykich.soraraw"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
         // CI の実行番号を使い、新しいビルドほど大きい番号にする
         versionCode = env("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
         versionName = "1.0"

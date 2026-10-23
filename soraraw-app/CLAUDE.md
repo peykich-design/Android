@@ -25,4 +25,6 @@ https://soraraw.com/ を表示するだけの、自分用の Android WebView ア
   APK を Artifact `soraraw-apk` に置く。master ではリリース `soraraw-latest` にも置く。
 - 最新 APK（master）：https://github.com/peykich-design/Application/releases/download/soraraw-latest/soraraw.apk
 - サイト情報の取得結果は、Actions の実行結果ページの Summary（「サイト情報の取得」）に出る。
-- 2026年10月の作成時点では、soraraw.com はサンドボックス・WebFetch・GitHub Actions のどれからも名前解決できず、仮の名前とアイコンになっている。
+- soraraw.com は**サンドボックスと WebFetch からは接続できない**（DNS で見つからない）が、GitHub Actions からは取得できる。
+  2026年10月時点の取得結果：名前「Soraraw」（manifest の short_name/name）、アイコン `images/android-chrome-512x512.png`、背景色 `#0284C7`。
+- compileSdk・targetSdk は 37（GitHub Actions の ubuntu-latest に android-37 が入っている。AGP 9.1.0 でビルドできた）。
