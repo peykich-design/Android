@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="error_title">ページを表示できません</string>
+    <string name="error_message">インターネットに接続されていないか、サイトに接続できません。接続を確認してから再読み込みしてください。</string>
+    <string name="reload">再読み込み</string>
+    <string name="download_started">ダウンロードを開始しました：%1$s</string>
+    <string name="download_saved">「ダウンロード」に保存しました：%1$s</string>
+    <string name="download_failed">ダウンロードできませんでした</string>
+    <string name="no_app_to_open">開けるアプリがありません</string>
+    <string name="storage_permission_needed">保存するにはストレージの許可が必要です</string>
+</resources>
