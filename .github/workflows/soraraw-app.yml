@@ -1,0 +1,83 @@
+# soraraw-app（soraraw.com を表示する WebView アプリ）をビルドする。
+# - push のたびに release APK をビルドし、Artifact「soraraw-apk」に置く
+# - master への push では、リリース「soraraw-latest」にも置く（スマホから同じ URL で最新版を取れる）
+# - ビルド前に tools/fetch_site_meta.py でサイトからアプリ名とアイコンを取得する（取れなければ仮のもの）
+# 署名には Secrets の鍵を使う（SIGNING_KEYSTORE_BASE64 / SIGNING_STORE_PASSWORD / SIGNING_KEY_ALIAS）。
+# 登録前はデバッグ鍵で署名される（上書きインストールできないので注意）。
+name: Soraraw app
+
+on:
+  push:
+    paths:
+      - "soraraw-app/**"
+      - ".github/workflows/soraraw-app.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: soraraw-app-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: soraraw-app
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Fetch app name and icon from the site
+        run: |
+          pip install --quiet pillow
+          python3 tools/fetch_site_meta.py https://soraraw.com/ app/src/main/res
+
+      - name: Decode signing key
+        env:
+          SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$SIGNING_KEYSTORE_BASE64" ]; then
+            echo "$SIGNING_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+            echo "SIGNING_KEYSTORE_PATH=$RUNNER_TEMP/release.keystore" >> "$GITHUB_ENV"
+            echo "固定の署名鍵（Secrets）で署名します" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Secrets に署名鍵がないため、デバッグ鍵で署名します（上書きインストール不可）"
+            echo "⚠️ 署名鍵が未登録のため、デバッグ鍵で署名しました（上書きインストール不可）" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Build APK and run unit tests
+        env:
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          chmod +x ./gradlew
+          ./gradlew assembleRelease testDebugUnitTest --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk soraraw.apk
+
+      - name: Upload APK (Artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: soraraw-apk
+          path: soraraw-app/soraraw.apk
+
+      - name: Publish to release (master only)
+        if: github.ref == 'refs/heads/master'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete soraraw-latest --yes --cleanup-tag || true
+          gh release create soraraw-latest soraraw.apk \
+            --target "${{ github.sha }}" --prerelease \
+            --title "soraraw アプリ（最新ビルド）" \
+            --notes "soraraw.apk をダウンロードしてインストールしてください。"

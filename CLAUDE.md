@@ -11,7 +11,9 @@ Android に限らず、Web・サーバーなど複数のアプリを**アプリ�
 | `android-template/` | Android アプリの**雛形**（Jetpack Compose + MVVM テンプレート）。直接は改造しない。決まりは `android-template/CLAUDE.md` |
 | `amazon-to-ai/` | Amazon のページを AI 向け Markdown/JSON に変換する Web アプリと、URL 取得用の Node サーバー。決まりは `amazon-to-ai/CLAUDE.md` |
 | `amazon-ai-reader-app/` | 上記の Android アプリ版（WebView でページを開いて変換。共有メニュー対応）。決まりは `amazon-ai-reader-app/CLAUDE.md` |
+| `soraraw-app/` | soraraw.com を表示する自分用の Android WebView アプリ（署名鍵は GitHub Secrets）。決まりは `soraraw-app/CLAUDE.md` |
 | `.github/workflows/amazon-ai-reader-app.yml` | Android アプリ版のビルドと単体テスト → APK をリリースに配置（エミュレーター確認は指定したときだけ） |
+| `.github/workflows/soraraw-app.yml` | soraraw-app のビルドと単体テスト → APK を Artifact に配置（master ではリリースにも） |
 | `.github/workflows/*-build-and-test-workflow.yml` | 雛形（`android-template/`）のビルドと単体テスト（master への push / PR 時） |
 | `.github/workflows/gemini.yml` | Issue やコメントに `@gemini-cli` と書くと Gemini CLI が応答する（リポジトリの Secret `GEMINI_API_KEY` を使用）。アプリのビルドとは無関係 |
 

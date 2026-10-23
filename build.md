@@ -39,6 +39,15 @@
 - これは個人インストール用。Google Play 配布には使わない。
 - minSdk 26 以上だと APK は v2 署名のみになる（正常）。
 
+### 鍵をリポジトリに入れたくない場合（GitHub Secrets で署名する）
+- 実例：`soraraw-app/`（`app/build.gradle.kts` と `.github/workflows/soraraw-app.yml`）。
+- キーストアを base64 にして Secret `SIGNING_KEYSTORE_BASE64` に、パスワードと別名を `SIGNING_STORE_PASSWORD` / `SIGNING_KEY_ALIAS` に入れる。
+  CI で `base64 -d > $RUNNER_TEMP/release.keystore` に戻し、パスを環境変数で Gradle に渡す。
+- **未登録の Secret は空文字で渡る**（null ではない）。Gradle 側は `orNull?.takeIf { it.isNotBlank() }` で空を「なし」として扱う。
+- 鍵がないときはデバッグ鍵で署名してビルドは通す（Secret 登録前でもビルド確認ができる）。ただしその APK は上書きインストールできない。
+- `keytool` の既定形式（PKCS12）は鍵のパスワードがストアのパスワードと同じになる。ユーザーに入れてもらう Secret は3つで足りる。
+- ユーザーはスマホの Termux で鍵を作れる：`pkg install openjdk-17` → `keytool -genkeypair ...` → `base64 -w0`。
+
 ## GitHub Actions
 - ワークフローは**リポジトリ直下の `.github/workflows/`** にしか置けない。アプリごとに `paths:` で対象フォルダを絞る。
   例：`.github/workflows/amazon-ai-reader-app.yml`（`amazon-ai-reader-app/**` の変更でビルド）。

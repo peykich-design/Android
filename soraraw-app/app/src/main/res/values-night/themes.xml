@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ダーク用。WebView はテーマがダーク（isLightTheme=false）だと、
+         サイトの prefers-color-scheme を dark と判定する（targetSdk 33 以上） -->
+    <style name="Theme.Soraraw" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/background</item>
+        <item name="android:colorBackground">@color/background</item>
+        <item name="android:colorAccent">@color/accent</item>
+        <item name="android:textColorPrimary">@color/on_background</item>
+    </style>
+</resources>
