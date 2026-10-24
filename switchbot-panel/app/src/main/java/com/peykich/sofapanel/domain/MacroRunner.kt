@@ -62,7 +62,7 @@ class MacroRunner(private val scope: CoroutineScope, private val repo: PanelRepo
         job?.cancel()
         job = null
         _state.value = null
-        if (name != null) repo.post("「$name」を中断しました")
+        if (name != null) repo.notice("「$name」を中断しました")
     }
 
     private fun totalWait(actions: List<Action>) = actions.sumOf { (it as? Action.Wait)?.seconds ?: 0 }

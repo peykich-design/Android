@@ -184,13 +184,13 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
     fun onCardTap(index: Int) {
         val slot = settings.value.cards.getOrNull(index) ?: return
         when (slot.kind) {
-            CardKind.NONE -> repo.post("このカードは未割り当てです（部屋名を2秒長押し → 設定）")
+            CardKind.NONE -> repo.notice("このカードは未割り当てです（部屋名を2秒長押し → 設定）")
             CardKind.SCENE -> runScene(index, slot)
             CardKind.MACRO -> {
                 val m = cardMacro(slot)
                 when {
                     m == null -> {
-                        repo.post("マクロが見つかりません", error = true)
+                        repo.notice("マクロが見つかりません", error = true)
                         _shake.tryEmit(index)
                     }
                     // 実行中のカードをもう一度タップしたら中断（確認なし）
@@ -205,8 +205,8 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
         val slot = settings.value.cards.getOrNull(index) ?: return
         when (slot.kind) {
             CardKind.MACRO -> cardMacro(slot)?.let { openEditor(it, Screen.Main) }
-            CardKind.SCENE -> repo.post("シーンの中身は SwitchBot アプリで編集してください")
-            CardKind.NONE -> repo.post("カードの割り当ては設定画面で行います")
+            CardKind.SCENE -> repo.notice("シーンの中身は SwitchBot アプリで編集してください")
+            CardKind.NONE -> repo.notice("カードの割り当ては設定画面で行います")
         }
     }
 
@@ -272,7 +272,7 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
         MacroRules.validate(m, macros.value)?.let { return it }
         return try {
             repo.macroStore.save(m)
-            repo.post("マクロ「${m.name}」を保存しました")
+            repo.notice("マクロ「${m.name}」を保存しました")
             closeEditor()
             null
         } catch (e: Exception) {
@@ -298,7 +298,7 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
 
     fun saveCredentials(token: String, secret: String) {
         if (token.isBlank() || secret.isBlank()) {
-            repo.post("トークンとシークレットの両方を入れてください", error = true)
+            repo.notice("トークンとシークレットの両方を入れてください", error = true)
             return
         }
         repo.saveCredentials(token, secret)
@@ -309,11 +309,11 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
         appScope.launch {
             repo.refreshLists()
                 .onSuccess { l ->
-                    if (!silent) repo.post("接続できました：機器${l.devices.size}台・シーン${l.scenes.size}件")
+                    if (!silent) repo.notice("接続できました：機器${l.devices.size}台・シーン${l.scenes.size}件")
                     autoAssignOnce(l)
                     if (repo.climate.value == null) repo.refreshClimate()
                 }
-                .onFailure { e -> repo.post("一覧を取得できません：" + repo.reason(e), error = true) }
+                .onFailure { e -> repo.notice("一覧を取得できません：" + repo.reason(e), error = true) }
         }
     }
 
@@ -372,9 +372,9 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
             val ok = withContext(Dispatchers.IO) { runCatching { repo.backgroundStore.import(uri) }.isSuccess }
             if (ok) {
                 repo.settingsStore.update { it.copy(backgroundVersion = System.currentTimeMillis()) }
-                repo.post("背景画像を設定しました")
+                repo.notice("背景画像を設定しました")
             } else {
-                repo.post("画像を読み込めませんでした", error = true)
+                repo.notice("画像を読み込めませんでした", error = true)
             }
         }
     }
@@ -383,7 +383,7 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             withContext(Dispatchers.IO) { repo.backgroundStore.clear() }
             repo.settingsStore.update { it.copy(backgroundVersion = 0) }
-            repo.post("背景画像を外しました")
+            repo.notice("背景画像を外しました")
         }
     }
 
@@ -399,7 +399,7 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
                     } ?: error("no stream")
                 }.isSuccess
             }
-            repo.post(if (ok) "マクロを書き出しました" else "書き出しに失敗しました", error = !ok)
+            repo.notice(if (ok) "マクロを書き出しました" else "書き出しに失敗しました", error = !ok)
         }
     }
 
@@ -413,7 +413,7 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
                     repo.macroStore.importJson(text)
                 }.getOrNull()
             }
-            if (count != null) repo.post("マクロを${count}件読み込みました") else repo.post("読み込めませんでした（形式が違います）", error = true)
+            if (count != null) repo.notice("マクロを${count}件読み込みました") else repo.notice("読み込めませんでした（形式が違います）", error = true)
         }
     }
 }
