@@ -17,6 +17,8 @@ import com.peykich.sofapanel.domain.Step
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,7 +35,7 @@ data class StatusMessage(
 )
 
 /** SwitchBot API と端末内の保存先をまとめて扱う */
-class PanelRepository(context: Context, scope: CoroutineScope) {
+class PanelRepository(context: Context, private val scope: CoroutineScope) {
     private val app = context.applicationContext
     val secrets = SecretStore(app)
     val settingsStore = SettingsStore(app)
@@ -124,8 +126,24 @@ class PanelRepository(context: Context, scope: CoroutineScope) {
         }
     }
 
+    /** 最後の送信結果。お知らせが消えたらこれに戻す */
+    private var lastResult: StatusMessage? = null
+
+    /** 送信結果（「映画」を送信しました など）。次の結果が出るまで上部バーに残す */
     fun post(text: String, error: Boolean = false, details: List<String> = emptyList()) {
-        status.value = StatusMessage(text, error, details)
+        val msg = StatusMessage(text, error, details)
+        lastResult = msg
+        status.value = msg
+    }
+
+    /** 設定の保存などのお知らせ。数秒で消えて、直前の送信結果の表示に戻る */
+    fun notice(text: String, error: Boolean = false) {
+        val msg = StatusMessage(text, error)
+        status.value = msg
+        scope.launch {
+            delay(if (error) 10_000L else 4_000L)
+            status.compareAndSet(msg, lastResult)
+        }
     }
 
     /** 失敗の理由を、機器名付きの短い文にする */
