@@ -29,6 +29,9 @@ object PanelColors {
 
 val LocalAccent = staticCompositionLocalOf { Color(0xFFE0A458) }
 
+/** カード・パネル・ボタン地の不透明度（背景画像を透かすとき 1 未満）。メイン画面だけで変える */
+val LocalSurfaceAlpha = staticCompositionLocalOf { 1f }
+
 private fun outfit(weight: Int) = Font(
     resId = R.font.outfit,
     weight = FontWeight(weight),

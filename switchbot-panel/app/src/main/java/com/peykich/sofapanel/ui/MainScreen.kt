@@ -272,7 +272,7 @@ private fun RunCard(
                 alpha = if (dimmed) 0.4f else 1f
             }
             .clip(CardShape)
-            .background(PanelColors.Card)
+            .background(PanelColors.Card.copy(alpha = LocalSurfaceAlpha.current))
             .border(1.dp, if (active) accent else PanelColors.Border, CardShape)
             // 触れた位置から波紋が広がる（Material の ripple）
             .combinedClickable(
@@ -363,7 +363,7 @@ private fun DimmerBar(modifier: Modifier, onCommit: (Int) -> Unit) {
         modifier
             .height(44.dp)
             .clip(ButtonShape)
-            .background(PanelColors.Button)
+            .background(PanelColors.Button.copy(alpha = LocalSurfaceAlpha.current))
             .pointerInput(Unit) {
                 detectTapGestures { o ->
                     value = (o.x / size.width).coerceIn(0.01f, 1f)

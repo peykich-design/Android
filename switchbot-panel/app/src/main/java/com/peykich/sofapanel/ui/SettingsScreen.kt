@@ -3,7 +3,14 @@
 package com.peykich.sofapanel.ui
 
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -25,6 +32,8 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -87,6 +96,7 @@ fun SettingsScreen(vm: PanelViewModel) {
             MacrosSection(vm, macros)
             PanelsSection(vm, settings)
             DisplaySection(vm, settings)
+            BackgroundSection(vm, settings)
             ChargeSection(vm, settings)
             PinningSection()
             Spacer(Modifier.height(24.dp))
@@ -417,6 +427,96 @@ private fun DisplaySection(vm: PanelViewModel, settings: AppSettings) {
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun BackgroundSection(vm: PanelViewModel, settings: AppSettings) {
+    val background by vm.background.collectAsState()
+    val picker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        uri?.let { vm.setBackground(it) }
+    }
+    // スライダーは動かしている間は画面内だけで変え、指を離したときに保存する
+    var dim by remember(settings.backgroundDim) { mutableFloatStateOf(settings.backgroundDim.toFloat()) }
+    var opacity by remember(settings.panelOpacity) { mutableFloatStateOf(settings.panelOpacity.toFloat()) }
+    val accent = LocalAccent.current
+    val sliderColors = SliderDefaults.colors(
+        thumbColor = accent,
+        activeTrackColor = accent,
+        inactiveTrackColor = PanelColors.Button,
+    )
+    Section("背景画像と透過") {
+        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            // プレビュー：背景・暗さ・カードの透け具合
+            Box(
+                Modifier
+                    .width(220.dp)
+                    .height(124.dp)
+                    .clip(CardShape)
+                    .background(PanelColors.Bg)
+                    .border(1.dp, PanelColors.Border, CardShape),
+            ) {
+                BackgroundLayer(background, dim.toInt())
+                Box(
+                    Modifier
+                        .padding(16.dp)
+                        .width(90.dp)
+                        .fillMaxHeight()
+                        .clip(ButtonShape)
+                        .background(PanelColors.Card.copy(alpha = opacity / 100f))
+                        .border(1.dp, PanelColors.Border, ButtonShape)
+                        .padding(10.dp),
+                ) {
+                    Text("映画", color = PanelColors.Text, fontSize = 14.sp, modifier = Modifier.align(Alignment.BottomStart))
+                }
+                if (background == null) {
+                    Text(
+                        "背景画像なし",
+                        color = PanelColors.SubText,
+                        fontSize = 12.sp,
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp),
+                    )
+                }
+            }
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    PanelButton("画像を選ぶ", icon = PanelIcons.Plus, highlight = true) {
+                        picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    }
+                    PanelButton("背景を外す", enabled = background != null) { vm.clearBackground() }
+                }
+                Note("画像はアプリ内に縮小して保存します（元の写真を消しても背景は残ります）。メイン画面に表示します。")
+            }
+        }
+        Spacer(Modifier.height(8.dp))
+        LabeledRow("背景の暗さ ${dim.toInt()}%") {
+            Slider(
+                value = dim,
+                onValueChange = { dim = it },
+                onValueChangeFinished = { vm.updateSettings { s -> s.copy(backgroundDim = dim.toInt()) } },
+                valueRange = 0f..90f,
+                steps = 8,
+                colors = sliderColors,
+            )
+        }
+        LabeledRow("カード・パネルの不透明度 ${opacity.toInt()}%") {
+            Slider(
+                value = opacity,
+                onValueChange = { opacity = it },
+                onValueChangeFinished = { vm.updateSettings { s -> s.copy(panelOpacity = opacity.toInt()) } },
+                valueRange = 20f..100f,
+                steps = 7,
+                colors = sliderColors,
+            )
+        }
+        LabeledRow("待機画面にも表示") {
+            Switch(
+                checked = settings.backgroundOnStandby,
+                onCheckedChange = { on -> vm.updateSettings { s -> s.copy(backgroundOnStandby = on) } },
+                colors = switchColors(),
+            )
+        }
+        Note("不透明度を下げるとカードやパネルが透けて背景が見えます。文字が読みにくいときは「背景の暗さ」を上げてください。待機画面ではまぶしさを抑えるため 80% 以上の暗さで表示します。")
     }
 }
 

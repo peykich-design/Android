@@ -29,9 +29,13 @@ fun StandbyScreen(vm: PanelViewModel) {
     val now by vm.now.collectAsState()
     val climate by vm.repo.climate.collectAsState()
     val lastRun by vm.repo.lastRunName.collectAsState()
+    val settings by vm.settings.collectAsState()
+    val background by vm.background.collectAsState()
     // 焼き付き対策：数分ごとに数ピクセルずらす
     val (dx, dy) = TimeRules.burnInShift(now)
     Box(Modifier.fillMaxSize().background(PanelColors.StandbyBg), contentAlignment = Alignment.Center) {
+        // 待機画面ではまぶしくないよう、メインより濃く（80%以上）暗くする
+        if (settings.backgroundOnStandby) BackgroundLayer(background, maxOf(settings.backgroundDim, 80))
         Column(
             Modifier.offset(dx.dp, dy.dp),
             horizontalAlignment = Alignment.CenterHorizontally,

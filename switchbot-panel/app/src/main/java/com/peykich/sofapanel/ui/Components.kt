@@ -54,7 +54,7 @@ fun PanelButton(
         modifier
             .heightIn(min = 44.dp)
             .clip(ButtonShape)
-            .background(if (highlight) accent.copy(alpha = 0.18f) else PanelColors.Button)
+            .background(if (highlight) accent.copy(alpha = 0.18f) else PanelColors.Button.copy(alpha = LocalSurfaceAlpha.current))
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -104,7 +104,7 @@ fun PanelCard(modifier: Modifier = Modifier, borderColor: Color = PanelColors.Bo
     Column(
         modifier
             .clip(CardShape)
-            .background(PanelColors.Card)
+            .background(PanelColors.Card.copy(alpha = LocalSurfaceAlpha.current))
             .border(1.dp, borderColor, CardShape)
             .padding(16.dp),
     ) { content() }

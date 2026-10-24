@@ -6,6 +6,8 @@ import android.os.SystemClock
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.peykich.sofapanel.PanelApp
@@ -31,6 +33,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalTime
@@ -69,6 +73,10 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
 
     private var lastInteraction = SystemClock.elapsedRealtime()
 
+    /** 背景画像（設定していなければ null） */
+    private val _background = MutableStateFlow<ImageBitmap?>(null)
+    val background: StateFlow<ImageBitmap?> = _background
+
     init {
         if (!repo.hasCredentials.value) {
             screen = Screen.Settings
@@ -80,6 +88,15 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
                 _now.value = System.currentTimeMillis()
                 checkIdle()
                 delay(1000)
+            }
+        }
+        viewModelScope.launch {
+            settings.map { it.backgroundVersion }.distinctUntilChanged().collect { version ->
+                _background.value = if (version == 0L) {
+                    null
+                } else {
+                    withContext(Dispatchers.IO) { runCatching { repo.backgroundStore.load()?.asImageBitmap() }.getOrNull() }
+                }
             }
         }
         viewModelScope.launch {
@@ -346,6 +363,28 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
             buttons = buttons,
             dimmer = CommandCatalog.supportsBrightness(d),
         )
+    }
+
+    // ---- 背景画像 ----
+
+    fun setBackground(uri: Uri) {
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) { runCatching { repo.backgroundStore.import(uri) }.isSuccess }
+            if (ok) {
+                repo.settingsStore.update { it.copy(backgroundVersion = System.currentTimeMillis()) }
+                repo.post("背景画像を設定しました")
+            } else {
+                repo.post("画像を読み込めませんでした", error = true)
+            }
+        }
+    }
+
+    fun clearBackground() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { repo.backgroundStore.clear() }
+            repo.settingsStore.update { it.copy(backgroundVersion = 0) }
+            repo.post("背景画像を外しました")
+        }
     }
 
     // ---- 書き出し・読み込み ----
