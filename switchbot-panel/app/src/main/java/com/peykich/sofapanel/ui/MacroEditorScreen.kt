@@ -207,7 +207,11 @@ fun MacroEditorScreen(vm: PanelViewModel, target: Screen.Editor) {
                 } else {
                     PanelButton("テスト実行", icon = PanelIcons.Play, enabled = steps.isNotEmpty()) {
                         val err = MacroRules.validate(current().copy(name = name.ifBlank { "テスト" }), others)
-                        if (err != null) error = err else vm.testRun(current().copy(name = name.ifBlank { "テスト" }))
+                        if (err != null) {
+                            error = err
+                        } else {
+                            vm.testRun(current().copy(name = name.ifBlank { "テスト" }))
+                        }
                     }
                 }
                 PanelButton("保存", icon = PanelIcons.Check, highlight = true) {

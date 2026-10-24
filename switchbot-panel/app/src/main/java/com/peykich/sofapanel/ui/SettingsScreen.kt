@@ -283,7 +283,7 @@ private fun PanelsSection(vm: PanelViewModel, settings: AppSettings) {
             LabeledRow("パネル${i + 1}") {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     ChoiceButton(panel.deviceName.ifBlank { "なし" }, options, Modifier.weight(1f))
-                    var title by remember(panel.title, panel.deviceId) { mutableStateOf(panel.title) }
+                    var title by remember(i, panel.deviceId) { mutableStateOf(panel.title) }
                     OutlinedTextField(
                         value = title,
                         onValueChange = {
@@ -369,7 +369,7 @@ private fun hourLabel(min: Int) = "${min / 60}:${(min % 60).toString().padStart(
 
 @Composable
 private fun DisplaySection(vm: PanelViewModel, settings: AppSettings) {
-    var room by remember(settings.roomName) { mutableStateOf(settings.roomName) }
+    var room by remember { mutableStateOf(settings.roomName) }
     Section("画面") {
         LabeledRow("部屋名") {
             OutlinedTextField(
