@@ -11,6 +11,8 @@ Android に限らず、Web・サーバーなど複数のアプリを**アプリ�
 | `android-template/` | Android アプリの**雛形**（Jetpack Compose + MVVM テンプレート）。直接は改造しない。決まりは `android-template/CLAUDE.md` |
 | `amazon-to-ai/` | Amazon のページを AI 向け Markdown/JSON に変換する Web アプリと、URL 取得用の Node サーバー。決まりは `amazon-to-ai/CLAUDE.md` |
 | `amazon-ai-reader-app/` | 上記の Android アプリ版（WebView でページを開いて変換。共有メニュー対応）。決まりは `amazon-ai-reader-app/CLAUDE.md` |
+| `switchbot-panel/` | SwitchBot の機器とシーンをソファ横の常設スマホから操作するパネルアプリ（Android）。決まりは `switchbot-panel/CLAUDE.md` |
+| `.github/workflows/switchbot-panel.yml` | パネルアプリのビルドと単体テスト → APK をリリースに配置 |
 | `.github/workflows/amazon-ai-reader-app.yml` | Android アプリ版のビルドと単体テスト → APK をリリースに配置（エミュレーター確認は指定したときだけ） |
 | `.github/workflows/*-build-and-test-workflow.yml` | 雛形（`android-template/`）のビルドと単体テスト（master への push / PR 時） |
 | `.github/workflows/gemini.yml` | Issue やコメントに `@gemini-cli` と書くと Gemini CLI が応答する（リポジトリの Secret `GEMINI_API_KEY` を使用）。アプリのビルドとは無関係 |
@@ -71,7 +73,7 @@ CI が必要なら `.github/workflows/<アプリ名>.yml` を作り、`paths: ["
 ### 秘密情報
 - API キー・トークン・パスワードはリポジトリに入れない（コード、設定ファイル、ドキュメント、テスト用データを含む）。
   CI で必要なものは GitHub の Secrets に置く（例：`GEMINI_API_KEY`）。アプリでは利用者が画面から入力する。
-- 例外は、公開して問題ないと決めた個人インストール用の署名鍵 `amazon-ai-reader-app/app/signing.keystore` だけ。
+- 例外は、公開して問題ないと決めた個人インストール用の署名鍵（`amazon-ai-reader-app/app/signing.keystore`、`switchbot-panel/app/signing.keystore`）だけ。
 
 ### その他
 - ユーザーはスマホから操作していることが多い。手順は短く、スマホで実行できる形で案内する。

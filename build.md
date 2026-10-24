@@ -56,6 +56,16 @@
 - 例：`https://github.com/peykich-design/Application/releases/download/amazon-ai-reader-latest/amazon-ai-reader.apk`
 - prerelease は `releases/latest` API には出てこない。確認は `releases/tags/<tag>` で行う。
 
+## サンドボックスで Kotlin の一部をコンパイル・テストする
+- Android SDK は無いが、**Android に依存しないコード（API の署名・解析、ルール判定など）と単体テスト**はサンドボックスで確認できる。
+  CI の往復（約5分）を減らせる。実例：`switchbot-panel/` の `api/` と `domain/` の一部。
+- Kotlin コンパイラは GitHub のリリースから取れる（Maven Central が 429 でも取れる）：
+  `curl -sSL -O https://github.com/JetBrains/kotlin/releases/download/v2.3.10/kotlin-compiler-2.3.10.zip && unzip -q kotlin-compiler-2.3.10.zip`
+- kotlinx.serialization を使うなら `-Xplugin=kotlinc/lib/kotlinx-serialization-compiler-plugin.jar` を付け、
+  実行時ライブラリ（`kotlinx-serialization-core-jvm` / `-json-jvm`）と `junit` / `hamcrest-core` の jar を Maven Central から `curl` で取る。
+- 例：`kotlinc/bin/kotlinc -Xplugin=... -cp <jar...> -d out <main の .kt> <test の .kt>` → `java -cp out:<jar...>:kotlinc/lib/kotlin-stdlib.jar org.junit.runner.JUnitCore <テストクラス>`
+- 作業はスクラッチパッドで行い、ダウンロードしたものはリポジトリに入れない。
+
 ## CI の結果をサンドボックスから見る方法
 - リポジトリは公開なので、`curl https://api.github.com/repos/<owner>/<repo>/actions/runs/<id>` で認証なしに状態を取れる。
   Bash の `run_in_background` で `until` ループを回して完了を待つ（`sleep` の直接実行は不可）。
