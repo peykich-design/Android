@@ -38,6 +38,7 @@ class PanelRepository(context: Context, scope: CoroutineScope) {
     val secrets = SecretStore(app)
     val settingsStore = SettingsStore(app)
     val macroStore = MacroStore(app)
+    val backgroundStore = BackgroundStore(app)
     private val cache = ListCache(app)
     private val counterPrefs = app.getSharedPreferences("api_calls", Context.MODE_PRIVATE)
 

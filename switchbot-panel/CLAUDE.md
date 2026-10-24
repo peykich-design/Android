@@ -15,6 +15,7 @@
   - `MacroRunner.kt`：実行（通信エラーは1回だけ再送、失敗は飛ばして続行、別マクロで中断・切替）
   - `ChargeController.kt`（判断だけ・テスト対象）と `ChargeManager.kt`（API 呼び出し）：充電管理
   - `TimeRules.kt`：夜間の時間帯、焼き付き対策のずらし量
+- `data/BackgroundStore.kt`：背景画像（選んだ画像を長辺1920pxに縮めて `filesDir/background.jpg` に保存）。設定の `backgroundVersion` が変わると読み直す
 - `data/`：`SecretStore.kt`（Keystore の AES-GCM で暗号化）、`SettingsStore.kt`（DataStore）、`JsonFiles.kt`（マクロと一覧キャッシュ）、`PanelRepository.kt`
 - `service/PanelService.kt`：フォアグラウンドサービス（`specialUse`）。電池の監視、1分ごとの充電判定、温湿度の10分ごとの取得
 - `ui/`：`MainScreen` / `StandbyScreen`（待機・夜間）/ `MacroEditorScreen` / `SettingsScreen`、`PanelViewModel`、`Theme.kt`（配色）、`PanelIcons.kt`（線画アイコン）
@@ -28,6 +29,7 @@
   一覧取得は起動時と手動のみ、温湿度は10分に1回、充電は切り替えの瞬間だけ。設定画面に「今日の API 呼び出し回数」が出る。
 - 赤外線リモコンは状態を持たない（「送信しました」だけを出す）。
 - 日本語フォントは端末標準（Android の日本語フォントは Noto Sans CJK で、Noto Sans JP と同じ字形）。ファイルを同梱すると APK が大きくなるため。
+- カード・パネル・ボタン地の色は `PanelColors.Card` / `Button` に `LocalSurfaceAlpha` を掛けて透過させる（メイン画面だけ設定値、他の画面は不透明）。新しくメイン画面に面を足すときも同じようにする。
 - 配色は `ui/Theme.kt` の `PanelColors`。アクセントは1色だけ（設定でアンバー・青・紫・緑）。
 
 ## ビルドと確認

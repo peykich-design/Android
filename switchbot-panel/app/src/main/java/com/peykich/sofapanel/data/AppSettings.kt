@@ -46,6 +46,14 @@ data class AppSettings(
     val chargeLow: Int = 30,
     val chargeHigh: Int = 80,
     val accent: Accent = Accent.AMBER,
+    /** 背景画像を設定した時刻（0 なら背景画像なし）。画像の読み直しの目印にも使う */
+    val backgroundVersion: Long = 0,
+    /** 背景画像の上に重ねる黒の濃さ（%）。文字を読みやすくする */
+    val backgroundDim: Int = 50,
+    /** カード・パネルの不透明度（%）。100 で透けない */
+    val panelOpacity: Int = 100,
+    /** 待機画面にも背景画像を出す（さらに暗くして表示） */
+    val backgroundOnStandby: Boolean = false,
     /** 初回の自動割り当てを済ませたか */
     val autoAssigned: Boolean = false,
 ) {
